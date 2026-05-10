@@ -23,7 +23,7 @@
         }
         body { background-color: var(--main-bg); font-family: 'Segoe UI', Tahoma, sans-serif; overflow-x: hidden; }
         
-        /* Copy phần CSS Sidebar & Navbar từ file index.php sang đây để đồng bộ giao diện */
+        /* Sidebar & Navbar */
         .sidebar { width: 250px; height: 100vh; background-color: var(--sidebar-bg); position: fixed; top: 0; left: 0; color: var(--text-light); z-index: 1000; }
         .sidebar-header { padding: 20px; font-size: 1.5rem; font-weight: 700; background-color: #1a252f; display: flex; align-items: center; }
         .nav-category { font-size: 0.75rem; text-transform: uppercase; color: #7f8c8d; padding: 15px 20px 5px; font-weight: bold; letter-spacing: 1px; }
@@ -35,7 +35,8 @@
         .top-navbar { background-color: #3498db; height: 60px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .dashboard-container { padding: 25px; flex-grow: 1; }
 
-        .form-card { border-radius: 10px; border: none; max-width: 800px; }
+        /* ĐÃ XÓA max-width: 800px; ĐỂ FORM TỰ ĐỘNG GIÃN ĐỀU */
+        .form-card { border-radius: 10px; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .form-label { font-weight: 600; color: #495057; }
         .btn-navy { background-color: var(--navy-blue); color: white; }
         .btn-navy:hover { background-color: #0e1d30; color: white; }
@@ -65,12 +66,12 @@
 
         <div class="dashboard-container">
             <div class="mb-4">
-                <a href="/users" class="text-decoration-none text-muted">
+                <a href="/users" class="text-decoration-none text-muted fw-bold">
                     <i class="bi bi-arrow-left me-1"></i> Back to User List
                 </a>
             </div>
 
-            <div class="card form-card shadow-sm">
+            <div class="card form-card shadow-sm w-100">
                 <div class="card-header bg-white py-3 border-bottom-0">
                     <h5 class="mb-0 text-navy fw-bold"><i class="bi bi-person-plus me-2"></i>Create New Staff Account</h5>
                 </div>
@@ -82,24 +83,24 @@
 
                     <form action="/users/create" method="POST">
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6 mb-4">
                                 <label for="full_name" class="form-label">Full Name</label>
-                                <input type="text" class="form-control" id="full_name" name="full_name" required placeholder="e.g. John Doe">
+                                <input type="text" class="form-control form-control-lg" id="full_name" name="full_name" required placeholder="e.g. John Doe">
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6 mb-4">
                                 <label for="username" class="form-label">Username</label>
-                                <input type="text" class="form-control" id="username" name="username" required placeholder="Must be unique">
+                                <input type="text" class="form-control form-control-lg" id="username" name="username" required placeholder="Must be unique">
                             </div>
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6 mb-4">
                                 <label for="password" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="password" name="password" required placeholder="Create a strong password">
+                                <input type="password" class="form-control form-control-lg" id="password" name="password" required placeholder="Create a strong password">
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6 mb-4">
                                 <label for="role_id" class="form-label">System Role</label>
-                                <select class="form-select" id="role_id" name="role_id" required>
+                                <select class="form-select form-select-lg" id="role_id" name="role_id" required>
                                     <option value="" disabled selected>Select a role...</option>
                                     <?php foreach ($roles as $role): ?>
                                         <option value="<?= $role['role_id'] ?>"><?= htmlspecialchars($role['role_name']) ?></option>
@@ -108,18 +109,18 @@
                             </div>
                         </div>
 
-                        <div class="mb-4">
+                        <div class="mb-5">
                             <label for="status" class="form-label">Account Status</label>
-                            <select class="form-select" id="status" name="status" style="max-width: 200px;">
+                            <select class="form-select form-select-lg" id="status" name="status" style="max-width: 300px;">
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
                             </select>
                         </div>
 
-                        <hr class="text-muted">
+                        <hr class="text-muted mb-4">
                         <div class="text-end">
-                            <button type="reset" class="btn btn-light me-2">Clear Form</button>
-                            <button type="submit" class="btn btn-navy px-4"><i class="bi bi-save me-1"></i> Save Account</button>
+                            <button type="reset" class="btn btn-light btn-lg me-2 px-4">Clear Form</button>
+                            <button type="submit" class="btn btn-navy btn-lg px-5 fw-bold"><i class="bi bi-save me-2"></i> Save Account</button>
                         </div>
                     </form>
                 </div>
