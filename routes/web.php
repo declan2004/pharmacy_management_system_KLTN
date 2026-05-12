@@ -53,5 +53,9 @@ $router->add('GET', '/returns/create', 'ReturnController', 'create');
 $router->add('POST', '/returns/create', 'ReturnController', 'create');
 $router->add('GET', '/returns/show', 'ReturnController', 'show');
 
+// Luồng Sales & POS
+$router->add('GET', '/pos', 'PosController', 'index');
+$router->add('GET', '/pos/search', 'PosController', 'search');
+
 return $router;
 
