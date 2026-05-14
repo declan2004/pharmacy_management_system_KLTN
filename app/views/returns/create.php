@@ -31,35 +31,32 @@
 </head>
 <body>
 
-    <div class="sidebar">
+    <<div class="sidebar">
         <div class="sidebar-header"><i class="bi bi-capsule me-2"></i> PMS</div>
         
         <div class="nav-category">Main</div>
         <a href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
         
-        <div class="nav-category">Inventory</div>
-        <a href="/returns" class="active"><i class="bi bi-arrow-return-left"></i> Return Orders</a>
+        <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 2): ?>
+            <div class="nav-category">Sales & Pos</div>
+            <a href="/pos"><i class="bi bi-cart-plus"></i> Create Invoice</a>
+            <a href="/invoices"><i class="bi bi-receipt"></i> Selling History</a>
+        <?php endif; ?>
+        
+        <?php if ($_SESSION['role_id'] == 1 || $_SESSION['role_id'] == 3): ?>
+            <div class="nav-category">Inventory</div>
+            <a href="/medicines"><i class="bi bi-box-seam"></i> Medicine Catalog</a>
+            <a href="/inventory"><i class="bi bi-stack"></i> Manage Inventory</a>
+            <a href="/imports"><i class="bi bi-truck"></i> Import Receipt</a>
+            <a href="/returns" class="active"><i class="bi bi-arrow-return-left"></i> Return Orders</a>
+        <?php endif; ?>
+        
+        <?php if ($_SESSION['role_id'] == 1): ?>
+            <div class="nav-category">System</div>
+            <a href="/reports"><i class="bi bi-bar-chart-line"></i> Analytics</a>
+            <a href="/users"><i class="bi bi-people"></i> Manage Users</a>
+        <?php endif; ?>
     </div>
-
-    <div class="main-content">
-        <div class="top-navbar">
-            <div class="dropdown">
-                <?php 
-                    $displayRole = 'Unknown';
-                    if ($_SESSION['role_id'] == 1) $displayRole = 'Manager';
-                    elseif ($_SESSION['role_id'] == 3) $displayRole = 'Inventory Staff';
-                ?>
-                <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-person-circle fs-5 me-2"></i>
-                    <strong><?= htmlspecialchars($fullName) ?> (<?= $displayRole ?>)</strong>
-                </a>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                    <li><a class="dropdown-item py-2" href="/profile"><i class="bi bi-person me-2"></i> Profile</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item py-2 text-danger" href="/logout"><i class="bi bi-box-arrow-right me-2"></i> Sign Out</a></li>
-                </ul>
-            </div>
-        </div>
 
         <div class="dashboard-container">
             <div class="mb-4">

@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?></title>
+    <title><?= $title ?? 'POS - PharmaCare' ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
@@ -25,11 +25,11 @@
         .main-content { margin-left: 250px; height: 100vh; display: flex; flex-direction: column; }
         .top-navbar { background-color: #3498db; height: 60px; min-height: 60px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10; }
         
-        /* WRAPPER MỚI CHO POS - TẠO KHOẢNG CÁCH GỌN GÀNG */
+        /* POS WRAPPER */
         .pos-wrapper { padding: 20px; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .pos-layout { display: flex; gap: 20px; flex: 1; overflow: hidden; }
         
-        /* 2 KHỐI CARD TRẮNG TÁCH BIỆT */
+        /* 2 KHỐI CARD */
         .pos-card-left { flex: 6; background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e0e0e0; }
         .pos-card-right { flex: 4; background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e0e0e0; }
         
@@ -85,7 +85,7 @@
                 ?>
                 <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-person-circle fs-5 me-2"></i>
-                    <strong><?= htmlspecialchars($fullName) ?> (<?= $displayRole ?>)</strong>
+                    <strong><?= htmlspecialchars($fullName ?? 'Staff') ?> (<?= $displayRole ?>)</strong>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
                     <li><a class="dropdown-item py-2" href="/profile"><i class="bi bi-person me-2 text-muted"></i> Profile</a></li>
@@ -149,6 +149,111 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+        <?php if (isset($_SESSION['checkout_success'])): ?>
+            <?php 
+                $invData = $_SESSION['checkout_success']; 
+                $invId = $invData['invoice_id'];
+                $method = $invData['method'];
+                $total = $invData['total'];
+            ?>
+            
+            const payMethod = '<?= $method ?>';
+            const totalAmt = <?= $total ?>;
+            const invoiceId = '<?= $invId ?>';
+            const formattedTotal = new Intl.NumberFormat('vi-VN').format(totalAmt) + ' ₫';
+
+            window.currentCheckoutTotal = totalAmt;
+            window.calcChange = function() {
+                const given = document.getElementById('customerGiven').value;
+                const change = given - window.currentCheckoutTotal;
+                if (change >= 0) {
+                    document.getElementById('changeAmount').innerText = new Intl.NumberFormat('vi-VN').format(change) + ' ₫';
+                } else {
+                    document.getElementById('changeAmount').innerText = 'Insufficient amount';
+                }
+            };
+
+            if (payMethod === 'Bank Transfer') {
+                const bankBin = '970422'; 
+                const bankAccount = '0123456789'; 
+                const qrUrl = `https://img.vietqr.io/image/${bankBin}-${bankAccount}-compact2.png?amount=${totalAmt}&addInfo=Thanh toan HD ${invoiceId}&accountName=PharmaCare`;
+
+                Swal.fire({
+                    title: 'Scan QR Code to Pay',
+                    html: `
+                        <p class="text-muted mb-2">Invoice <b>#${invoiceId}</b></p>
+                        <h2 class="text-danger fw-bold mb-3">${formattedTotal}</h2>
+                        <img src="${qrUrl}" alt="VietQR" style="width: 250px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <p class="mt-3 text-primary"><i class="bi bi-arrow-repeat spin"></i> Waiting for customer payment...</p>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonColor: '#27ae60',
+                    cancelButtonColor: '#95a5a6',
+                    confirmButtonText: '<i class="bi bi-printer"></i> Confirm & Print',
+                    cancelButtonText: 'Close',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // HIỆN THÔNG BÁO IN THÀNH CÔNG CHO CHUYỂN KHOẢN
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Printing...',
+                            text: 'Payment confirmed. Invoice #' + invoiceId + ' sent to printer!',
+                            timer: 2500,
+                            showConfirmButton: false
+                        });
+                        // Epic 3 sẽ thêm dòng: window.open(`/invoices/print/${invoiceId}`, '_blank');
+                    }
+                });
+
+            } else {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Checkout Successful!',
+                    html: `
+                        <h3 class="text-success fw-bold mt-2">${formattedTotal}</h3>
+                        <p>Invoice: <b>#${invoiceId}</b></p>
+                        <hr>
+                        <div class="form-group text-start px-3">
+                            <label class="text-muted small">Customer Given:</label>
+                            <input type="number" id="customerGiven" class="form-control form-control-lg text-end" placeholder="Enter amount..." onkeyup="window.calcChange()">
+                            <label class="text-muted small mt-2">Change:</label>
+                            <h4 id="changeAmount" class="text-danger text-end fw-bold">0 ₫</h4>
+                        </div>
+                    `,
+                    confirmButtonColor: '#3498db',
+                    confirmButtonText: '<i class="bi bi-printer"></i> Print Invoice'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Printing...',
+                            text: 'Invoice #' + invoiceId + ' sent to printer successfully!',
+                            timer: 2500,
+                            showConfirmButton: false
+                        });
+                        // Epic 3 sẽ thêm dòng: window.open(`/invoices/print/${invoiceId}`, '_blank');
+                    }
+                });
+            }
+
+            <?php unset($_SESSION['checkout_success']); ?>
+        <?php endif; ?>
+
+        <?php if (isset($_SESSION['error'])): ?>
+            Swal.fire({
+                icon: 'error',
+                title: 'Checkout Failed!',
+                text: '<?= $_SESSION['error'] ?>',
+                confirmButtonColor: '#e74c3c'
+            });
+            <?php unset($_SESSION['error']); ?>
+        <?php endif; ?>
+    </script>
 
     <script>
         let cart = {}; 
@@ -335,12 +440,28 @@
 
         function submitCheckout() {
             if (Object.keys(cart).length === 0) {
-                alert('Your cart is empty. Please select items to sell.');
+                Swal.fire('Empty Cart', 'Please select at least one item to checkout.', 'warning');
                 return;
             }
-            if (confirm('Confirm checkout?')) {
-                alert('Mọi thứ hoạt động hoàn hảo! Sẵn sàng cho Epic 2.');
-            }
+            
+            Swal.fire({
+                title: 'Confirm Checkout?',
+                text: "You are about to process this order.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#95a5a6',
+                confirmButtonText: 'Yes, checkout!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Processing...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading() }
+                    });
+                    document.getElementById('checkoutForm').submit(); 
+                }
+            });
         }
     </script>
 </body>

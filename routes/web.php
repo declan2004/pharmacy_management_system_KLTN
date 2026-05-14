@@ -36,18 +36,18 @@ $router->add('GET', '/medicines/export', 'MedicineController', 'export');
 $router->add('GET', '/medicines/import', 'MedicineController', 'import');
 $router->add('POST', '/medicines/import', 'MedicineController', 'import');
 
-// Routes cho module Import (Nhập kho)
+// Routes cho module Import 
 $router->add('GET', '/imports', 'ImportController', 'index');
 $router->add('GET', '/imports/create', 'ImportController', 'create');
 $router->add('POST', '/imports/create', 'ImportController', 'create');
 $router->add('GET', '/imports/show', 'ImportController', 'show');
 
-// Routes cho module Inventory (Tồn kho)
+// Routes cho module Inventory 
 $router->add('GET', '/inventory', 'InventoryController', 'index');
 $router->add('GET', '/inventory/export', 'InventoryController', 'export');
 $router->add('POST', '/inventory/adjust', 'InventoryController', 'adjust');
 
-// Routes cho module Return Orders (Trả hàng)
+// Routes cho module Return Orders
 $router->add('GET', '/returns', 'ReturnController', 'index');
 $router->add('GET', '/returns/create', 'ReturnController', 'create');
 $router->add('POST', '/returns/create', 'ReturnController', 'create');
@@ -56,6 +56,16 @@ $router->add('GET', '/returns/show', 'ReturnController', 'show');
 // Luồng Sales & POS
 $router->add('GET', '/pos', 'PosController', 'index');
 $router->add('GET', '/pos/search', 'PosController', 'search');
+$router->add('POST', '/pos/checkout', 'PosController', 'checkout');
+
+// Luồng Selling History
+$router->add('GET', '/invoices', 'InvoiceController', 'index');
+// API lấy chi tiết hóa đơn (AJAX)
+$router->add('GET', '/invoices/details', 'InvoiceController', 'details');
+// Route in hóa đơn
+$router->add('GET', '/invoices/print', 'InvoiceController', 'print');
+// Route xử lý logic Khách trả hàng
+$router->add('POST', '/invoices/process-return', 'InvoiceController', 'processReturn');
 
 return $router;
 

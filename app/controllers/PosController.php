@@ -30,4 +30,52 @@ class PosController extends Controller {
         echo json_encode($medicines);
         exit;
     }
+
+    // Xử lý Thanh toán & Trừ kho 
+    public function checkout() {
+        $this->authorize([1, 2]);
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $medicineIds   = $_POST['medicine_id'] ?? [];
+            $quantities    = $_POST['quantity'] ?? [];
+            $prices        = $_POST['price'] ?? [];
+            $paymentMethod = $_POST['payment_method'] ?? 'Cash';
+            
+            if (empty($medicineIds)) {
+                $_SESSION['error'] = "Giỏ hàng rỗng!";
+                header('Location: /pos');
+                exit;
+            }
+
+            $totalAmount = 0;
+            for ($i = 0; $i < count($prices); $i++) {
+                $totalAmount += (float)$prices[$i] * (int)$quantities[$i];
+            }
+
+            $data = [
+                'medicine_ids'   => $medicineIds,
+                'quantities'     => $quantities,
+                'prices'         => $prices,
+                'payment_method' => $paymentMethod,
+                'total_amount'   => $totalAmount,
+                'pharmacist_id'  => $_SESSION['user_id'] 
+            ];
+
+            $posModel = $this->model('Pos');
+            $result = $posModel->createInvoice($data);
+
+            if ($result) {
+                $_SESSION['checkout_success'] = [
+                    'invoice_id' => $result,
+                    'method'     => $paymentMethod,
+                    'total'      => $totalAmount
+                ];
+            } else {
+                $_SESSION['error'] = "Checkout failed due to system error.";
+            }
+            
+            header('Location: /pos');
+            exit;
+        }
+    }
 }
