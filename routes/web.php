@@ -67,5 +67,8 @@ $router->add('GET', '/invoices/print', 'InvoiceController', 'print');
 // Route xử lý logic Khách trả hàng
 $router->add('POST', '/invoices/process-return', 'InvoiceController', 'processReturn');
 
+// API Endpoint trả về dữ liệu Real-time (JSON) cho Dashboard
+$router->add('GET', '/home/apiStats', 'HomeController', 'apiStats');
+
 return $router;
 
