@@ -318,6 +318,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
+                    
+                    <div id="modalPrescriptionInfo"></div>
+
                     <div class="table-responsive">
                         <table class="table table-bordered">
                             <thead class="table-light">
@@ -376,12 +379,61 @@
         function viewDetails(id) {
             document.getElementById('modalInvId').innerText = '#' + id;
             document.getElementById('modalPrintBtn').onclick = () => window.open('/invoices/print?id=' + id, '_blank');
+            
+            // Xóa vùng dữ liệu cũ trước khi mở modal mới
+            document.getElementById('modalPrescriptionInfo').innerHTML = '';
+            document.getElementById('modalDetailsBody').innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></td></tr>';
+            
             invoiceModal.show();
+            
             fetch('/invoices/details?id=' + id).then(r => r.json()).then(data => {
+                if (data.error || data.length === 0) {
+                    document.getElementById('modalDetailsBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger">No details found.</td></tr>';
+                    return;
+                }
+
+                // 1. KIỂM TRA VÀ HIỂN THỊ THÔNG TIN ĐƠN THUỐC
+                if (data[0].doctor_name) {
+                    const pDate = new Date(data[0].prescription_date).toLocaleDateString('en-GB'); // Định dạng dd/mm/yyyy
+                    
+                    // LỌC RA TÊN CÁC LOẠI THUỐC ETC ĐỂ HIỂN THỊ RÕ RÀNG
+                    const etcMedicines = data.filter(item => item.medicine_type === 'ETC')
+                                             .map(item => item.medicine_name)
+                                             .join(', ');
+
+                    document.getElementById('modalPrescriptionInfo').innerHTML = `
+                        <div class="alert alert-info py-2 mb-3 border-0 shadow-sm" style="background: #e7f3ff; color: #0c5460;">
+                            <div class="d-flex align-items-start mt-1">
+                                <i class="bi bi-file-earmark-medical fs-3 me-3"></i>
+                                <div>
+                                    <div class="fw-bold mb-1">Prescription Information</div>
+                                    <div class="small">Doctor: <b>${data[0].doctor_name}</b> <span class="mx-2">|</span> Date: <b>${pDate}</b></div>
+                                    <div class="small text-danger mt-1"><i class="bi bi-capsule me-1"></i>Applied to (ETC): <b>${etcMedicines}</b></div>
+                                    ${data[0].diagnosis_note ? `<div class="text-muted small mt-1">Diagnosis: ${data[0].diagnosis_note}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 2. VẼ BẢNG CHI TIẾT 
                 let html = '';
                 data.forEach((item, i) => {
                     let d = new Date(item.expiry_date);
-                    html += `<tr><td>${i+1}</td><td><span class="badge bg-secondary">${item.medicine_code}</span></td><td>${item.medicine_name}</td><td>Lot: ${item.batch_number}<br><small>EXP: ${d.toLocaleDateString('vi-VN')}</small></td><td class="text-center">${item.quantity}</td><td class="text-end">${formatVND.format(item.unit_price)} ₫</td><td class="text-end fw-bold">${formatVND.format(item.subtotal)} ₫</td></tr>`;
+                    let badgeClass = item.medicine_type === 'ETC' ? 'bg-danger' : 'bg-success';
+                    
+                    html += `<tr>
+                                <td>${i+1}</td>
+                                <td><span class="badge bg-secondary">${item.medicine_code}</span></td>
+                                <td>
+                                    <span class="fw-bold text-dark">${item.medicine_name}</span>
+                                    <span class="badge ${badgeClass} ms-1" style="font-size: 0.6rem;">${item.medicine_type}</span>
+                                </td>
+                                <td>Lot: ${item.batch_number}<br><small class="text-muted">EXP: ${d.toLocaleDateString('en-GB')}</small></td>
+                                <td class="text-center fw-bold">${item.quantity}</td>
+                                <td class="text-end">${formatVND.format(item.unit_price)} ₫</td>
+                                <td class="text-end fw-bold text-danger">${formatVND.format(item.subtotal)} ₫</td>
+                            </tr>`;
                 });
                 document.getElementById('modalDetailsBody').innerHTML = html;
             });

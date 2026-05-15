@@ -97,13 +97,14 @@ class Invoice {
 
     // Lấy chi tiết các mặt hàng trong một hóa đơn
     public function getInvoiceDetails($invoiceId) {
-        // THÊM d.batch_id VÀO ĐỂ LÀM LOGIC TRẢ HÀNG
         $query = "SELECT d.quantity, d.unit_price, d.subtotal, d.batch_id, 
-                         m.medicine_code, m.medicine_name, 
-                         b.batch_number, b.expiry_date 
+                         m.medicine_code, m.medicine_name, m.medicine_type, 
+                         b.batch_number, b.expiry_date,
+                         p.doctor_name, p.prescription_date, p.diagnosis_note
                   FROM invoice_details d
                   JOIN batches b ON d.batch_id = b.batch_id
                   JOIN medicines m ON b.medicine_id = m.medicine_id
+                  LEFT JOIN prescriptions p ON d.invoice_id = p.invoice_id
                   WHERE d.invoice_id = :inv_id";
         
         $stmt = $this->db->prepare($query);

@@ -41,6 +41,11 @@ class PosController extends Controller {
             $prices        = $_POST['price'] ?? [];
             $paymentMethod = $_POST['payment_method'] ?? 'Cash';
             
+            // HỨNG DỮ LIỆU TOA THUỐC TỪ MODAL (NẾU CÓ)
+            $doctorName       = $_POST['doctor_name'] ?? null;
+            $prescriptionDate = $_POST['prescription_date'] ?? null;
+            $diagnosisNote    = $_POST['diagnosis_note'] ?? null;
+            
             if (empty($medicineIds)) {
                 $_SESSION['error'] = "Giỏ hàng rỗng!";
                 header('Location: /pos');
@@ -53,12 +58,17 @@ class PosController extends Controller {
             }
 
             $data = [
-                'medicine_ids'   => $medicineIds,
-                'quantities'     => $quantities,
-                'prices'         => $prices,
-                'payment_method' => $paymentMethod,
-                'total_amount'   => $totalAmount,
-                'pharmacist_id'  => $_SESSION['user_id'] 
+                'medicine_ids'      => $medicineIds,
+                'quantities'        => $quantities,
+                'prices'            => $prices,
+                'payment_method'    => $paymentMethod,
+                'total_amount'      => $totalAmount,
+                'pharmacist_id'     => $_SESSION['user_id'],
+                
+                // TRUYỀN DỮ LIỆU TOA THUỐC XUỐNG MODEL
+                'doctor_name'       => $doctorName,
+                'prescription_date' => $prescriptionDate,
+                'diagnosis_note'    => $diagnosisNote
             ];
 
             $posModel = $this->model('Pos');

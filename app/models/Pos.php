@@ -107,6 +107,21 @@ class Pos {
                 }
             }
 
+            // 3. LƯU THÔNG TIN ĐƠN THUỐC (CHUẨN GPP CHO THUỐC ETC)
+            if (!empty($data['doctor_name']) && !empty($data['prescription_date'])) {
+                $stmtPres = $this->db->prepare("
+                    INSERT INTO prescriptions (invoice_id, doctor_name, prescription_date, diagnosis_note) 
+                    VALUES (:inv_id, :doc_name, :pre_date, :note)
+                ");
+                $stmtPres->execute([
+                    ':inv_id'   => $invoiceId,
+                    ':doc_name' => $data['doctor_name'],
+                    ':pre_date' => $data['prescription_date'],
+                    ':note'     => $data['diagnosis_note'] ?? null
+                ]);
+            }
+
+            // Hoàn tất giao dịch
             $this->db->commit();
             return $invoiceId;
 

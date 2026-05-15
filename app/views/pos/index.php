@@ -118,7 +118,7 @@
                     
                     <form id="checkoutForm" action="/pos/checkout" method="POST" class="d-flex flex-column h-100">
                         <div class="cart-items" id="cartContainer">
-                            </div>
+                        </div>
 
                         <div class="checkout-panel">
                             <div class="d-flex justify-content-between mb-2">
@@ -148,11 +148,48 @@
         </div>
     </div>
 
+    <div class="modal fade" id="prescriptionModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-danger bg-opacity-10 border-bottom-0">
+                    <h5 class="modal-title fw-bold text-danger">
+                        <i class="bi bi-file-medical me-2"></i>Prescription Information Required
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger small mb-4">
+                        <i class="bi bi-exclamation-octagon-fill me-1"></i>
+                        Your cart contains prescription medicines (ETC). Please enter the prescription details!
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Prescribing Doctor <span class="text-danger">*</span></label>
+                        <input type="text" id="doctorName" class="form-control" placeholder="e.g., Dr. John Doe" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Prescription Date <span class="text-danger">*</span></label>
+                        <input type="date" id="prescriptionDate" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Diagnosis / Notes</label>
+                        <textarea id="diagnosisNote" class="form-control" rows="2" placeholder="e.g., Acute pharyngitis..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger fw-bold" onclick="submitWithPrescription()">
+                        <i class="bi bi-check-circle me-1"></i>Confirm & Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<script>
+    <script>
         <?php if (isset($_SESSION['checkout_success'])): ?>
             <?php 
                 $invData = $_SESSION['checkout_success']; 
@@ -180,7 +217,7 @@
             if (payMethod === 'Bank Transfer') {
                 const bankBin = '970422'; 
                 const bankAccount = '0123456789'; 
-                const qrUrl = `https://img.vietqr.io/image/${bankBin}-${bankAccount}-compact2.png?amount=${totalAmt}&addInfo=Thanh toan HD ${invoiceId}&accountName=PharmaCare`;
+                const qrUrl = `https://img.vietqr.io/image/${bankBin}-${bankAccount}-compact2.png?amount=${totalAmt}&addInfo=Payment Inv ${invoiceId}&accountName=PharmaCare`;
 
                 Swal.fire({
                     title: 'Scan QR Code to Pay',
@@ -198,15 +235,11 @@
                     allowOutsideClick: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // HIỆN THÔNG BÁO IN THÀNH CÔNG CHO CHUYỂN KHOẢN
                         Swal.fire({
-                            icon: 'success',
-                            title: 'Printing...',
-                            text: 'Payment confirmed. Invoice #' + invoiceId + ' sent to printer!',
-                            timer: 2500,
-                            showConfirmButton: false
+                            icon: 'success', title: 'Printing...', text: 'Payment confirmed. Invoice #' + invoiceId + ' sent to printer!',
+                            timer: 2500, showConfirmButton: false
                         });
-                        // Epic 3 sẽ thêm dòng: window.open(`/invoices/print/${invoiceId}`, '_blank');
+                        window.open(`/invoices/print?id=${invoiceId}`, '_blank');
                     }
                 });
 
@@ -230,13 +263,10 @@
                 }).then((result) => {
                     if (result.isConfirmed) {
                         Swal.fire({
-                            icon: 'success',
-                            title: 'Printing...',
-                            text: 'Invoice #' + invoiceId + ' sent to printer successfully!',
-                            timer: 2500,
-                            showConfirmButton: false
+                            icon: 'success', title: 'Printing...', text: 'Invoice #' + invoiceId + ' sent to printer successfully!',
+                            timer: 2500, showConfirmButton: false
                         });
-                        // Epic 3 sẽ thêm dòng: window.open(`/invoices/print/${invoiceId}`, '_blank');
+                        window.open(`/invoices/print?id=${invoiceId}`, '_blank');
                     }
                 });
             }
@@ -266,6 +296,10 @@
         document.addEventListener('DOMContentLoaded', () => { 
             fetchMedicines(); 
             renderCart(); 
+            
+            // Chặn chọn ngày tương lai
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('prescriptionDate').setAttribute('max', today);
         });
 
         document.getElementById('checkoutForm').addEventListener('keydown', function(e) {
@@ -358,7 +392,7 @@
                 if (parseInt(cart[id].qty) < totalQty) {
                     cart[id].qty = parseInt(cart[id].qty) + 1;
                 } else {
-                    alert('Cannot exceed available stock (' + totalQty + ')');
+                    Swal.fire('Limit Exceeded', 'Cannot exceed available stock (' + totalQty + ')', 'warning');
                 }
             } else {
                 cart[id] = { ...med, qty: 1 };
@@ -377,7 +411,7 @@
             if (newQty <= 0) {
                 delete cart[id]; 
             } else if (newQty > totalQty) {
-                alert('Maximum stock reached!');
+                Swal.fire('Limit Exceeded', 'Maximum stock reached!', 'warning');
             } else {
                 item.qty = newQty;
             }
@@ -412,10 +446,13 @@
                 totalAmt += subtotal;
                 totalItemCount += item.qty;
 
+                const isOTC = item.medicine_type === 'OTC';
+                const badge = `<span class="badge ${isOTC ? 'bg-success' : 'bg-danger'}" style="font-size: 0.65rem;">${item.medicine_type}</span>`;
+
                 html += `
                     <div class="cart-item">
                         <div class="flex-grow-1">
-                            <div class="fw-bold text-dark" style="font-size: 0.9rem;">${item.medicine_name}</div>
+                            <div class="fw-bold text-dark" style="font-size: 0.9rem;">${item.medicine_name} ${badge}</div>
                             <div class="text-muted small">${formatVND(price)} x ${item.qty}</div>
                             
                             <input type="hidden" name="medicine_id[]" value="${item.medicine_id}">
@@ -438,12 +475,9 @@
             container.scrollTop = container.scrollHeight; 
         }
 
-        function submitCheckout() {
-            if (Object.keys(cart).length === 0) {
-                Swal.fire('Empty Cart', 'Please select at least one item to checkout.', 'warning');
-                return;
-            }
-            
+        // CHECKOUT LOGIC (ETC / GPP COMPLIANCE)
+        
+        function processFinalCheckout() {
             Swal.fire({
                 title: 'Confirm Checkout?',
                 text: "You are about to process this order.",
@@ -462,6 +496,64 @@
                     document.getElementById('checkoutForm').submit(); 
                 }
             });
+        }
+
+        function submitCheckout() {
+            const keys = Object.keys(cart);
+            if (keys.length === 0) {
+                Swal.fire('Empty Cart', 'Please select at least one item to checkout.', 'warning');
+                return;
+            }
+            
+            let hasETC = false;
+            for (let i = 0; i < keys.length; i++) {
+                if (cart[keys[i]].medicine_type === 'ETC') {
+                    hasETC = true;
+                    break;
+                }
+            }
+
+            if (hasETC) {
+                const pModal = new bootstrap.Modal(document.getElementById('prescriptionModal'));
+                pModal.show();
+            } else {
+                processFinalCheckout();
+            }
+        }
+
+        function submitWithPrescription() {
+            const docName = document.getElementById('doctorName').value.trim();
+            const preDate = document.getElementById('prescriptionDate').value;
+            const note = document.getElementById('diagnosisNote').value.trim();
+
+            if (docName === '' || preDate === '') {
+                Swal.fire('Missing Information!', 'Please enter both the Prescribing Doctor and Prescription Date.', 'error');
+                return;
+            }
+
+            // KHÓA LOGIC CHẶN NGÀY TƯƠNG LAI
+            const selectedDate = new Date(preDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); 
+
+            if (selectedDate > today) {
+                Swal.fire('Invalid Date!', 'The prescription date cannot be in the future.', 'error');
+                return;
+            }
+
+            const form = document.getElementById('checkoutForm');
+            
+            document.querySelectorAll('.prescription-hidden-input').forEach(e => e.remove());
+
+            form.insertAdjacentHTML('beforeend', `<input type="hidden" class="prescription-hidden-input" name="doctor_name" value="${docName}">`);
+            form.insertAdjacentHTML('beforeend', `<input type="hidden" class="prescription-hidden-input" name="prescription_date" value="${preDate}">`);
+            form.insertAdjacentHTML('beforeend', `<input type="hidden" class="prescription-hidden-input" name="diagnosis_note" value="${note}">`);
+
+            const modalEl = document.getElementById('prescriptionModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            modalInstance.hide();
+
+            processFinalCheckout();
         }
     </script>
 </body>
