@@ -70,5 +70,9 @@ $router->add('POST', '/invoices/process-return', 'InvoiceController', 'processRe
 // API Endpoint trả về dữ liệu Real-time (JSON) cho Dashboard
 $router->add('GET', '/home/apiStats', 'HomeController', 'apiStats');
 
+//Luồng Analytics 
+$router->add('GET', '/reports', 'ReportController', 'index');
+$router->add('GET', '/reports/api-analytics', 'ReportController', 'apiAnalytics');
+
 return $router;
 
