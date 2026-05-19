@@ -88,4 +88,34 @@ class PosController extends Controller {
             exit;
         }
     }
+
+    // API XỬ LÝ MÃ VẠCH (BARCODE SCANNER) TRẢ VỀ JSON
+    public function apiScanBarcode() {
+        $barcode = $_GET['barcode'] ?? '';
+        
+        // Kiểm tra nếu mã vạch rỗng
+        if (empty($barcode)) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Barcode cannot be empty.'
+            ]);
+            return;
+        }
+
+        $medicineModel = $this->model('Medicine');
+        $medicine = $medicineModel->getMedicineByBarcode($barcode);
+
+        // Trả kết quả JSON về cho Frontend
+        if ($medicine) {
+            echo json_encode([
+                'success' => true, 
+                'medicine' => $medicine
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Error: No medicine found with this barcode!'
+            ]);
+        }
+    }
 }

@@ -216,6 +216,100 @@
             
             document.getElementById('grandTotalText').innerText = grandTotal.toLocaleString('vi-VN') + ' ₫';
         }
+
+        // BARCODE SCANNER INTEGRATION 
+        let barcodeString = "";
+        let lastKeyTime = Date.now();
+
+        // 1. Listen for scanner input
+        window.addEventListener('keypress', function(e) {
+            let currentTime = Date.now();
+            let timeDiff = currentTime - lastKeyTime;
+            
+            // LOG RA XEM TỐC ĐỘ GÕ VÀ KÝ TỰ LÀ GÌ
+            console.log(`Ký tự: ${e.key} | Độ trễ: ${timeDiff}ms`);
+            
+            if (timeDiff > 150) {
+                barcodeString = "";
+            }
+            
+            if (e.key === "Enter") {
+                console.log("-> BẮT ĐƯỢC ENTER! Chuỗi hiện tại: ", barcodeString); // Xem chuỗi có bị rỗng không
+                if (barcodeString.length > 6) {
+                    e.preventDefault(); 
+                    console.log("-> ĐANG GỌI API API..."); 
+                    processImportBarcode(barcodeString);
+                } else {
+                    console.log("-> Chuỗi quá ngắn, bỏ qua!");
+                }
+                barcodeString = ""; 
+            } else if (e.key !== "Enter") {
+                barcodeString += e.key; 
+            }
+            
+            lastKeyTime = currentTime;
+        });
+
+        // 2. Fetch API to get Medicine ID
+        function processImportBarcode(barcode) {
+            fetch('/pos/apiScanBarcode?barcode=' + barcode)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        let medId = data.medicine.medicine_id;
+                        autoSelectMedicineInRow(medId);
+                    } else {
+                        alert("Error: Scanned barcode does not match any medicine in the catalog!");
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // 3. Auto-fill logic
+        function autoSelectMedicineInRow(medicineId) {
+            const tbody = document.querySelector('#detailsTable tbody');
+            let selects = tbody.querySelectorAll('.select-medicine');
+            let targetSelect = null;
+
+            // Step 3.1: Find the first empty row (where no medicine is selected)
+            for(let i = 0; i < selects.length; i++) {
+                if(selects[i].value === "") {
+                    targetSelect = selects[i];
+                    break;
+                }
+            }
+
+            // Step 3.2: If no empty row found, automatically add a new row
+            if(!targetSelect) {
+                addRow(); // Call your existing function
+                selects = tbody.querySelectorAll('.select-medicine');
+                targetSelect = selects[selects.length - 1]; // Get the newly added select
+            }
+
+            // Step 3.3: Change the select value to match the scanned medicine
+            targetSelect.value = medicineId;
+
+            // Step 3.4: UX Enhancements (Highlight row and move focus)
+            let row = targetSelect.closest('tr');
+            
+            // Brief highlight effect
+            let originalBg = row.style.backgroundColor;
+            row.style.backgroundColor = "#e8f0fe";
+            setTimeout(() => row.style.backgroundColor = originalBg, 500);
+            
+            // Automatically focus the Batch Number input for fast typing
+            let batchInput = row.querySelector('input[name="batch_number[]"]');
+            if (batchInput) {
+                batchInput.focus();
+            }
+        }
+
+        // 4. Block Enter key specifically on input fields 
+        document.querySelector('#detailsTable').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
     </script>
 </body>
 </html>

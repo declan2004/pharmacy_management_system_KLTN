@@ -191,5 +191,51 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+    let barcodeString = "";
+    let lastKeyTime = Date.now();
+
+    // 1. Bắt sự kiện máy quét trên toàn màn hình
+    window.addEventListener('keypress', function(e) {
+        let currentTime = Date.now();
+        
+        // Nếu gõ chậm hơn 30ms -> Là người gõ phím tay, reset chuỗi
+        if (currentTime - lastKeyTime > 30) {
+            barcodeString = "";
+        }
+        
+        // Nếu kết thúc bằng Enter và chuỗi đủ dài 
+        if (e.key === "Enter" && barcodeString.length > 6) {
+            e.preventDefault(); // CHẶN LỆNH SUBMIT FORM CỦA MÁY QUÉT
+            
+            // Tìm ô input Barcode và tự động điền số vào
+            let barcodeInput = document.querySelector('input[name="barcode"]');
+            if (barcodeInput) {
+                barcodeInput.value = barcodeString;
+                
+                let originalBg = barcodeInput.style.backgroundColor;
+                barcodeInput.style.backgroundColor = "#e8f0fe";
+                setTimeout(() => barcodeInput.style.backgroundColor = originalBg, 400);
+            }
+            
+            barcodeString = ""; // Reset chờ lần quét tiếp theo
+        } else if (e.key !== "Enter") {
+            barcodeString += e.key; // Nối ký tự
+        }
+        
+        lastKeyTime = currentTime;
+    });
+
+    // 2. Rào chắn bổ sung: Đề phòng Dược sĩ chủ động click chuột vào ô Barcode rồi mới quét
+    let barcodeInputNode = document.querySelector('input[name="barcode"]');
+    if (barcodeInputNode) {
+        barcodeInputNode.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); 
+            }
+        });
+    }
+</script>
 </body>
 </html>

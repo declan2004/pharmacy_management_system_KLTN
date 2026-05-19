@@ -138,5 +138,46 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+    let barcodeString = "";
+    let lastKeyTime = Date.now();
+
+    window.addEventListener('keypress', function(e) {
+        let currentTime = Date.now();
+        
+        if (currentTime - lastKeyTime > 30) {
+            barcodeString = "";
+        }
+        
+        if (e.key === "Enter" && barcodeString.length > 6) {
+            e.preventDefault(); // Chặn submit form
+            
+            let barcodeInput = document.querySelector('input[name="barcode"]');
+            if (barcodeInput) {
+                barcodeInput.value = barcodeString; // Ghi đè mã vạch cũ
+                
+                let originalBg = barcodeInput.style.backgroundColor;
+                barcodeInput.style.backgroundColor = "#e8f0fe";
+                setTimeout(() => barcodeInput.style.backgroundColor = originalBg, 400);
+            }
+            
+            barcodeString = ""; 
+        } else if (e.key !== "Enter") {
+            barcodeString += e.key; 
+        }
+        
+        lastKeyTime = currentTime;
+    });
+
+    let barcodeInputNode = document.querySelector('input[name="barcode"]');
+    if (barcodeInputNode) {
+        barcodeInputNode.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); 
+            }
+        });
+    }
+</script>
 </body>
 </html>

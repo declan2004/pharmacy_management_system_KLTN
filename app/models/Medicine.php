@@ -111,4 +111,12 @@ class Medicine {
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         return $stmt->execute();
     }
+
+    // Barcode POS
+    public function getMedicineByBarcode($barcode) {
+    // Prevent SQL Injection using prepared statements
+    $stmt = $this->db->prepare("SELECT * FROM medicines WHERE barcode = ? AND deleted_at IS NULL");
+    $stmt->execute([$barcode]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
 }

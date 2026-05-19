@@ -556,5 +556,48 @@
             processFinalCheckout();
         }
     </script>
+
+    <script>
+    let barcodeString = "";
+    let lastKeyTime = Date.now();
+
+    // Listen for keypress events globally
+    window.addEventListener('keypress', function(e) {
+        let currentTime = Date.now();
+        
+        // If time between keystrokes is > 30ms, it's manual typing, reset the string
+        if (currentTime - lastKeyTime > 30) {
+            barcodeString = "";
+        }
+        
+        // If Enter is pressed and string is long enough (Barcode usually > 8 chars)
+        if (e.key === "Enter" && barcodeString.length > 8) {
+            e.preventDefault(); // Prevent form submission
+            
+            scanBarcode(barcodeString); 
+            barcodeString = ""; // Reset for the next scan
+        } else if (e.key !== "Enter") {
+            barcodeString += e.key; 
+        }
+        
+        lastKeyTime = currentTime;
+    });
+
+    function scanBarcode(barcode) {
+        fetch('/pos/apiScanBarcode?barcode=' + barcode)
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    addToCart(data.medicine);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("An unexpected error occurred while scanning.");
+            });
+    }
+</script>
 </body>
 </html>

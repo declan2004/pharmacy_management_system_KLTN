@@ -15,7 +15,6 @@ class Inventory {
         $params = [];
         
         if (!empty($search)) {
-            // Đặt tên tham số riêng biệt cho từng cột để tránh lỗi HY093 của PDO
             $query .= " AND (m.medicine_name LIKE :search1 OR m.medicine_code LIKE :search2 OR b.batch_number LIKE :search3)";
             $params[':search1'] = "%$search%";
             $params[':search2'] = "%$search%";
