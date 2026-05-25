@@ -13,7 +13,6 @@
         :root { --sidebar-bg: #2c3e50; --sidebar-hover: #34495e; --main-bg: #f4f7f6; --text-light: #ecf0f1; --navy-blue: #152b48; }
         body { background-color: var(--main-bg); font-family: 'Segoe UI', Tahoma, sans-serif; overflow-x: hidden; }
         
-        /* Sidebar Styles Đồng Bộ */
         .sidebar { width: 250px; height: 100vh; background-color: var(--sidebar-bg); position: fixed; top: 0; left: 0; color: var(--text-light); z-index: 1000; }
         .sidebar-header { padding: 20px; font-size: 1.5rem; font-weight: 700; background-color: #1a252f; display: flex; align-items: center; }
         .nav-category { font-size: 0.75rem; text-transform: uppercase; color: #7f8c8d; padding: 15px 20px 5px; font-weight: bold; letter-spacing: 1px; }
@@ -21,17 +20,15 @@
         .sidebar a:hover, .sidebar a.active { background-color: var(--sidebar-hover); color: #ffffff; border-left: 4px solid #3498db; }
         .sidebar a i { margin-right: 15px; font-size: 1.1rem; }
         
-        /* Main Content & Navbar Đồng Bộ */
+        /* FIX LAYOUT: Main Content wrapper */
         .main-content { margin-left: 250px; min-height: 100vh; display: flex; flex-direction: column; }
-        .top-navbar { background-color: #3498db; height: 60px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .dashboard-container { padding: 30px; flex-grow: 1; }
-        
         .form-card { border-radius: 12px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
 
-    <<div class="sidebar">
+    <div class="sidebar">
         <div class="sidebar-header"><i class="bi bi-capsule me-2"></i> PMS</div>
         
         <div class="nav-category">Main</div>
@@ -58,6 +55,7 @@
         <?php endif; ?>
     </div>
 
+    <div class="main-content">
         <div class="dashboard-container">
             <div class="mb-4">
                 <a href="/returns" class="text-decoration-none text-muted fw-bold"><i class="bi bi-arrow-left me-1"></i> Back to Return Orders</a>
@@ -100,9 +98,9 @@
                                     <tr>
                                         <td class="ps-4 py-3">
                                             <select class="form-select batch-select" name="batch_id[]" required onchange="updateMaxQty(this)">
-                                                <option value="" data-max="0">-- Select Batch from Inventory --</option>
+                                                <option value="" data-max="0" data-med-id="0">-- Select Batch from Inventory --</option>
                                                 <?php foreach($batches as $b): ?>
-                                                    <option value="<?= $b['batch_id'] ?>" data-max="<?= $b['quantity'] ?>">
+                                                    <option value="<?= $b['batch_id'] ?>" data-max="<?= $b['quantity'] ?>" data-med-id="<?= $b['medicine_id'] ?? '' ?>">
                                                         <?= htmlspecialchars($b['medicine_name']) ?> (LOT: <?= $b['batch_number'] ?>)
                                                     </option>
                                                 <?php endforeach; ?>
@@ -121,19 +119,19 @@
 
                 <div class="text-end">
                     <a href="/returns" class="btn btn-light px-4 me-2">Cancel</a>
-                    <button type="submit" class="btn btn-danger px-5 py-2 fw-bold shadow-sm"><i class="bi bi-check2-circle me-2"></i>Submit Return & Deduct Stock</button>
+                    <button type="submit" class="btn btn-danger px-5 py-2 fw-bold shadow-sm"><i class="bi bi-check2-circle me-2"></i>Submit Return</button>
                 </div>
             </form>
         </div>
-    </div>
-
-    <table style="display: none;"><tbody id="rowTemplate">
+    </div> <table style="display: none;"><tbody id="rowTemplate">
         <tr>
             <td class="ps-4 py-3">
                 <select class="form-select batch-select" name="batch_id[]" required onchange="updateMaxQty(this)">
-                    <option value="" data-max="0">-- Select Batch from Inventory --</option>
+                    <option value="" data-max="0" data-med-id="0">-- Select Batch from Inventory --</option>
                     <?php foreach($batches as $b): ?>
-                        <option value="<?= $b['batch_id'] ?>" data-max="<?= $b['quantity'] ?>"><?= htmlspecialchars($b['medicine_name']) ?> (LOT: <?= $b['batch_number'] ?>)</option>
+                        <option value="<?= $b['batch_id'] ?>" data-max="<?= $b['quantity'] ?>" data-med-id="<?= $b['medicine_id'] ?? '' ?>">
+                            <?= htmlspecialchars($b['medicine_name']) ?> (LOT: <?= $b['batch_number'] ?>)
+                        </option>
                     <?php endforeach; ?>
                 </select>
             </td>
@@ -150,18 +148,106 @@
             const tbody = document.querySelector('#detailsTable tbody');
             tbody.insertAdjacentHTML('beforeend', document.querySelector('#rowTemplate').innerHTML);
         }
+        
         function removeRow(btn) {
             const tbody = document.querySelector('#detailsTable tbody');
             if (tbody.children.length > 1) btn.closest('tr').remove();
         }
+        
         function updateMaxQty(selectElement) {
             const row = selectElement.closest('tr');
             const maxQty = selectElement.options[selectElement.selectedIndex].getAttribute('data-max');
             row.querySelector('.stock-display').value = maxQty;
             const qtyInput = row.querySelector('.qty-input');
-            qtyInput.max = maxQty; // Không cho nhập vượt quá tồn kho
+            qtyInput.max = maxQty; 
             if(parseInt(qtyInput.value) > parseInt(maxQty)) qtyInput.value = maxQty;
         }
+
+        // BARCODE SCANNER 
+        let barcodeString = "";
+        let lastKeyTime = Date.now();
+
+        window.addEventListener('keypress', function(e) {
+            let currentTime = Date.now();
+            if (currentTime - lastKeyTime > 150) barcodeString = "";
+            
+            if (e.key === "Enter" && barcodeString.length > 6) {
+                e.preventDefault(); 
+                processReturnBarcode(barcodeString);
+                barcodeString = ""; 
+            } else if (e.key !== "Enter") {
+                barcodeString += e.key; 
+            }
+            lastKeyTime = currentTime;
+        });
+
+        function processReturnBarcode(barcode) {
+            fetch('/pos/apiScanBarcode?barcode=' + barcode)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        autoSelectReturnBatch(data.medicine.medicine_id);
+                    } else {
+                        alert("Error: Scanned barcode not found in catalog!");
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function autoSelectReturnBatch(medId) {
+            const tbody = document.querySelector('#detailsTable tbody');
+            let selects = tbody.querySelectorAll('.batch-select');
+            let targetSelect = null;
+
+            // 1. Tìm dòng trống
+            for(let i = 0; i < selects.length; i++) {
+                if(selects[i].value === "") {
+                    targetSelect = selects[i];
+                    break;
+                }
+            }
+
+            // 2. Thêm dòng mới nếu hết chỗ
+            if(!targetSelect) {
+                addRow();
+                selects = tbody.querySelectorAll('.batch-select');
+                targetSelect = selects[selects.length - 1];
+            }
+
+            // 3. Quét qua các thẻ <option> để tìm Lô thuốc khớp với ID thuốc vừa quét
+            let optionFound = false;
+            let options = targetSelect.options;
+            
+            for(let i = 0; i < options.length; i++) {
+                // Sử dụng data-med-id để khớp dữ liệu
+                if (options[i].getAttribute('data-med-id') == medId) {
+                    targetSelect.selectedIndex = i;
+                    optionFound = true;
+                    break; 
+                }
+            }
+
+            if (optionFound) {
+                updateMaxQty(targetSelect); // Cập nhật số lượng tồn kho tự động
+                
+                let row = targetSelect.closest('tr');
+                let originalBg = row.style.backgroundColor;
+                row.style.backgroundColor = "#ffebee"; 
+                setTimeout(() => row.style.backgroundColor = originalBg, 500);
+                
+                // Focus vào ô số lượng trả
+                let qtyInput = row.querySelector('.qty-input');
+                if (qtyInput) qtyInput.focus();
+            } else {
+                alert("Error: Found the medicine, but there are no matching batches in stock to return!");
+                if (targetSelect.value === "") targetSelect.closest('tr').remove(); // Dọn dẹp dòng trống vừa sinh ra
+            }
+        }
+        
+        // Chặn phím Enter trong bảng
+        document.querySelector('#detailsTable').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') e.preventDefault();
+        });
     </script>
 </body>
 </html>
