@@ -112,11 +112,33 @@ class Medicine {
         return $stmt->execute();
     }
 
+    // Hàm tự động sinh mã thuốc tiếp theo
+    public function generateNextCode() {
+        // Đã sửa 'ORDER BY id' thành 'ORDER BY medicine_id'
+        $query = "SELECT medicine_code FROM medicines ORDER BY medicine_id DESC LIMIT 1";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($result && !empty($result['medicine_code'])) {
+            $lastCode = $result['medicine_code'];
+            // Cắt chữ "MED-", lấy số và cộng 1
+            $numberPart = (int) str_replace('MED-', '', $lastCode);
+            $nextNumber = $numberPart + 1;
+            // Trả về chuỗi format chuẩn 3 số
+            return sprintf("MED-%03d", $nextNumber);
+        } else {
+            return "MED-001";
+        }
+    }
+
     // Barcode POS
     public function getMedicineByBarcode($barcode) {
     // Prevent SQL Injection using prepared statements
     $stmt = $this->db->prepare("SELECT * FROM medicines WHERE barcode = ? AND deleted_at IS NULL");
     $stmt->execute([$barcode]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
-}
+    }
+
+
 }

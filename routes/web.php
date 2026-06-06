@@ -77,6 +77,9 @@ $router->add('GET', '/reports/api-analytics', 'ReportController', 'apiAnalytics'
 // API dùng chung cho toàn hệ thống: Quét Barcode trả về JSON
 $router->add('GET', '/pos/apiScanBarcode', 'PosController', 'apiScanBarcode');
 
+// AIcontroller
+$router->add('POST', '/ai/generateMedicineInfo', 'AiController', 'generateMedicineInfo');
+$router->add('POST', '/ai/chat', 'AiController', 'chatCopilot');
 
 return $router;
 

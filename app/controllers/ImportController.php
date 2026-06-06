@@ -22,59 +22,72 @@ class ImportController extends Controller {
         $this->authorize([1, 3]);
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $items = [];
-            
-            // Chuyển đổi các mảng song song từ Form thành 1 mảng cấu trúc dễ xử lý
-            if (isset($_POST['medicine_id']) && is_array($_POST['medicine_id'])) {
-                for ($i = 0; $i < count($_POST['medicine_id']); $i++) {
-                    $medId = $_POST['medicine_id'][$i];
-                    $batchNo = trim($_POST['batch_number'][$i]);
-                    $expiry = $_POST['expiry_date'][$i];
-                    $qty = (int)$_POST['quantity'][$i];
-                    $price = (float)$_POST['import_price'][$i];
-                    
-                    // Bỏ qua các dòng trống (nếu người dùng bấm Add Row mà không điền)
-                    if (empty($medId) || empty($batchNo) || $qty <= 0) continue;
+            $supplierName = trim($_POST['supplier_name'] ?? '');
+            $note = trim($_POST['note'] ?? '');
 
-                    $items[] = [
-                        'medicine_id'  => $medId,
-                        'batch_number' => strtoupper($batchNo), 
-                        'expiry_date'  => $expiry,
-                        'quantity'     => $qty,
-                        'import_price' => $price
-                    ];
-                }
-            }
-
-            if (!empty($items)) {
-                $importData = [
-                    'staff_id'      => $_SESSION['user_id'], 
-                    'supplier_name' => trim($_POST['supplier_name']),
-                    'note'          => trim($_POST['note']),
-                    'items'         => $items
-                ];
-
-                $importModel = $this->model('ImportReceipt');
-                if ($importModel->createTransaction($importData)) {
-                    $_SESSION['import_success'] = "Receipt created and inventory updated successfully!";
-                    header('Location: /imports');
-                    exit;
-                } else {
-                    $error = "System Error: Failed to process transaction. Transaction rolled back.";
-                }
+            // Bắt lỗi: Nếu bỏ trống Supplier Name hoặc Note thì báo lỗi ngay
+            if (empty($supplierName) || empty($note)) {
+                $error = "Supplier Name and Note / Reference are required.";
             } else {
-                $error = "Please add at least one valid medicine to the receipt.";
+                $items = [];
+                
+                // Chuyển đổi các mảng song song từ Form thành 1 mảng cấu trúc dễ xử lý
+                if (isset($_POST['medicine_id']) && is_array($_POST['medicine_id'])) {
+                    for ($i = 0; $i < count($_POST['medicine_id']); $i++) {
+                        $medId = $_POST['medicine_id'][$i];
+                        $batchNo = trim($_POST['batch_number'][$i]);
+                        $expiry = $_POST['expiry_date'][$i];
+                        $qty = (int)$_POST['quantity'][$i];
+                        $price = (float)$_POST['import_price'][$i];
+                        
+                        // Bỏ qua các dòng trống (nếu người dùng bấm Add Row mà không điền)
+                        if (empty($medId) || empty($batchNo) || $qty <= 0) continue;
+
+                        $items[] = [
+                            'medicine_id'  => $medId,
+                            'batch_number' => strtoupper($batchNo), 
+                            'expiry_date'  => $expiry,
+                            'quantity'     => $qty,
+                            'import_price' => $price
+                        ];
+                    }
+                }
+
+                if (!empty($items)) {
+                    $importData = [
+                        'staff_id'      => $_SESSION['user_id'], 
+                        'supplier_name' => $supplierName, // Dùng biến đã được trim()
+                        'note'          => $note,         // Dùng biến đã được trim()
+                        'items'         => $items
+                    ];
+
+                    $importModel = $this->model('ImportReceipt');
+                    if ($importModel->createTransaction($importData)) {
+                        $_SESSION['import_success'] = "Receipt created and inventory updated successfully!";
+                        header('Location: /imports');
+                        exit;
+                    } else {
+                        $error = "System Error: Failed to process transaction. Transaction rolled back.";
+                    }
+                } else {
+                    $error = "Please add at least one valid medicine to the receipt.";
+                }
             }
         }
 
         $medicineModel = $this->model('Medicine');
         $medicines = $medicineModel->getAll();
 
+        // Lấy mã Lô tiếp theo
+        $importModel = $this->model('ImportReceipt');
+        $nextBatchNo = $importModel->generateNextBatchNumber();
+
         $data = [
-            'title'     => 'Create Import Receipt - Pharmacy System',
-            'fullName'  => $_SESSION['full_name'],
-            'medicines' => $medicines,
-            'error'     => $error ?? ''
+            'title'       => 'Create Import Receipt - Pharmacy System',
+            'fullName'    => $_SESSION['full_name'],
+            'medicines'   => $medicines,
+            'error'       => $error ?? '',
+            'nextBatchNo' => $nextBatchNo // Truyền mã Lô tự động sang View
         ];
         
         $this->view('imports/create', $data);

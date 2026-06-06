@@ -3,6 +3,7 @@
  * @var string $fullName 
  * @var array $medicines 
  * @var string $error
+ * @var string $nextBatchNo
  */
 ?>
 <!DOCTYPE html>
@@ -83,12 +84,12 @@
                     <div class="card-body px-4 pb-4">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-secondary small">Supplier Name</label>
-                                <input type="text" class="form-control" name="supplier_name" placeholder="Enter supplier company name">
+                                <label class="form-label fw-bold text-secondary small">Supplier Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="supplier_name" required placeholder="Enter supplier company name">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold text-secondary small">Note / Reference</label>
-                                <input type="text" class="form-control" name="note" placeholder="E.g. Invoice #12345">
+                                <label class="form-label fw-bold text-secondary small">Note / Reference <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="note" required placeholder="E.g. Invoice #12345">
                             </div>
                         </div>
                     </div>
@@ -127,7 +128,9 @@
                                                 <?php endforeach; ?>
                                             </select>
                                         </td>
-                                        <td><input type="text" class="form-control" name="batch_number[]" required placeholder="LOT-XXX"></td>
+                                        <td>
+                                            <input type="text" class="form-control bg-light fw-bold text-primary" name="batch_number[]" value="<?= isset($nextBatchNo) ? htmlspecialchars($nextBatchNo) : '' ?>" readonly>
+                                        </td>
                                         <td><input type="date" class="form-control" name="expiry_date[]" required></td>
                                         <td><input type="number" class="form-control input-qty" name="quantity[]" required min="1" value="1" oninput="calcTotals()"></td>
                                         <td><input type="number" class="form-control input-price" name="import_price[]" required min="0" step="100" placeholder="0" oninput="calcTotals()"></td>
@@ -168,7 +171,9 @@
                         <?php endforeach; ?>
                     </select>
                 </td>
-                <td><input type="text" class="form-control" name="batch_number[]" required placeholder="LOT-XXX"></td>
+                <td>
+                    <input type="text" class="form-control bg-light fw-bold text-primary" name="batch_number[]" value="<?= isset($nextBatchNo) ? htmlspecialchars($nextBatchNo) : '' ?>" readonly>
+                </td>
                 <td><input type="date" class="form-control" name="expiry_date[]" required></td>
                 <td><input type="number" class="form-control input-qty" name="quantity[]" required min="1" value="1" oninput="calcTotals()"></td>
                 <td><input type="number" class="form-control input-price" name="import_price[]" required min="0" step="100" placeholder="0" oninput="calcTotals()"></td>

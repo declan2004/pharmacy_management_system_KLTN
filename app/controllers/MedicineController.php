@@ -18,9 +18,13 @@ class MedicineController extends Controller {
         $this->view('medicines/index', $data);
     }
 
+    // Hiển thị form Thêm mới và xử lý thêm
     public function create() {
         $this->authorize([1, 3]);
         $medicineModel = $this->model('Medicine');
+
+        // Lấy mã thuốc tiếp theo từ Database để hiển thị sẵn trên form
+        $nextCode = $medicineModel->generateNextCode();
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $data = [
@@ -50,7 +54,8 @@ class MedicineController extends Controller {
             'title'    => 'Add New Medicine - Pharmacy System',
             'fullName' => $_SESSION['full_name'],
             'error'    => $error ?? '',
-            'recent'   => $recentMedicines
+            'recent'   => $recentMedicines,
+            'nextCode' => $nextCode // Truyền biến mã tự động sang View
         ];
         
         $this->view('medicines/create', $data);
@@ -123,22 +128,21 @@ class MedicineController extends Controller {
         $medicineModel = $this->model('Medicine');
         $medicines = $medicineModel->getAll();
 
-        // Thiết lập Header để trình duyệt hiểu đây là file tải về
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=medicines_export_' . date('Ymd_His') . '.csv');
         $output = fopen('php://output', 'w');
 
-        // Ghi ký tự BOM (Byte Order Mark) để Excel không bị lỗi font Tiếng Việt
         fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
 
-        // Ghi dòng tiêu đề cột
         fputcsv($output, ['Medicine Code', 'Barcode', 'Medicine Name', 'Active Ingredient', 'Concentration', 'Unit', 'Base Price', 'Type', 'Description']);
 
-        // Lặp và ghi từng dòng dữ liệu
         foreach ($medicines as $med) {
+            // [FIX EXCEL] Thêm dấu nháy đơn vào trước Barcode
+            $safeBarcode = !empty($med['barcode']) ? "'" . $med['barcode'] : '';
+
             fputcsv($output, [
                 $med['medicine_code'],
-                $med['barcode'],
+                $safeBarcode,
                 $med['medicine_name'],
                 $med['active_ingredient'],
                 $med['concentration'],
@@ -164,17 +168,14 @@ class MedicineController extends Controller {
                 
                 if ($fileExt == 'csv') {
                     
-                    // FIX LỖI 1: Ép PHP tự động nhận diện mọi loại dấu xuống dòng của Excel/Mac
                     ini_set('auto_detect_line_endings', TRUE);
                     
                     $handle = fopen($file['tmp_name'], "r");
                     $medicineModel = $this->model('Medicine');
                     
-                    // Xử lý BOM (Byte Order Mark) để không dính ký tự lạ
                     $bom = fread($handle, 3);
                     rewind($handle);
                     
-                    // FIX LỖI 2: Thuật toán nhận diện dấu phân cách thông minh nhất (Dựa vào số cột)
                     $firstLine = fgets($handle);
                     if ($bom === "\xEF\xBB\xBF") { $firstLine = substr($firstLine, 3); }
                     
@@ -189,17 +190,15 @@ class MedicineController extends Controller {
                         }
                     }
                     
-                    // Reset lại con trỏ để bắt đầu đọc thật
                     rewind($handle);
                     if ($bom === "\xEF\xBB\xBF") { fread($handle, 3); } 
-                    fgetcsv($handle, 1000, $delimiter); // Bỏ qua Header
+                    fgetcsv($handle, 1000, $delimiter); 
                     
                     $successCount = 0;
                     $errorDetails = []; 
                     $rowNum = 2;
 
                     while (($data = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
-                        // Bỏ qua dòng rỗng do Excel thỉnh thoảng sinh ra ở cuối file
                         if (empty(array_filter($data))) {
                             $rowNum++; continue;
                         }
@@ -211,14 +210,20 @@ class MedicineController extends Controller {
                             $price = floatval($cleanPrice);
                             $type  = strtoupper(trim($data[7]));
 
-                            // Validate cơ bản
-                            if (empty($code) || empty($name)) {
-                                $errorDetails[] = "Row $rowNum: Medicine Code and Name cannot be empty.";
+                            if (empty($name)) {
+                                $errorDetails[] = "Row $rowNum: Medicine Name cannot be empty.";
                                 $rowNum++; continue;
                             }
                             
-                            // FIX LỖI 3: Chặn file Excel làm hỏng mã Barcode thành số mũ (vd: 8.93E+12)
+                            // Sinh mã nếu Excel để trống
+                            if (empty($code)) {
+                                $code = $medicineModel->generateNextCode();
+                            }
+                            
+                            // xóa dấu nháy đơn do export sinh ra
                             $barcode = trim($data[1]);
+                            $barcode = ltrim($barcode, "'"); 
+
                             if (strpos($barcode, 'E+') !== false || strpos($barcode, 'e+') !== false) {
                                 $errorDetails[] = "Row $rowNum: Barcode corrupted by Excel (Shows as $barcode). Please format column as Text in Excel.";
                                 $rowNum++; continue;

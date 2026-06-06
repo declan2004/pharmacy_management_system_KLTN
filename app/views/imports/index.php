@@ -29,10 +29,31 @@
         .action-btn { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s; }
         .action-btn:hover { transform: translateY(-2px); }
         
-        /* Modal Styles */
         .modal-header { background-color: #f8f9fa; border-bottom: 2px solid #e9ecef; }
         .info-label { font-size: 0.8rem; color: #6c757d; text-transform: uppercase; font-weight: bold; margin-bottom: 3px; }
         .info-value { font-weight: 600; color: #2c3e50; }
+
+        /* ========================================= */
+        /* CSS CHUYÊN DỤNG CHO MÁY IN (RECEIPT STYLE) */
+        /* ========================================= */
+        @media print {
+            /* 1. Ẩn toàn bộ giao diện web (dùng display: none để không chừa khoảng trắng) */
+            body > * { display: none !important; }
+            .modal-backdrop { display: none !important; }
+            
+            /* 2. Chỉ hiển thị duy nhất khu vực in */
+            #printArea { 
+                display: block !important; 
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 100%; 
+                font-family: 'Courier New', Courier, monospace !important; /* Font hóa đơn */
+                color: #000;
+                padding: 10px;
+                background-color: white;
+            }
+        }
     </style>
 </head>
 <body>
@@ -214,6 +235,51 @@
         </div>
     </div>
 
+    <div id="printArea" style="display: none;">
+        <div style="text-align: center; font-weight: bold;">
+            <div style="font-size: 1.2rem;">PMS</div>
+            <div>123 Healthcare St, Hanoi</div>
+            <div>Tel: 1900 1234</div>
+            <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+            <div style="font-size: 1.1rem; text-transform: uppercase;">Import Receipt</div>
+        </div>
+        
+        <div style="margin-top: 15px; font-size: 0.9rem;">
+            <div>Receipt No: <strong id="prtId"></strong></div>
+            <div>Date: <span id="prtDate"></span></div>
+            <div>Supplier: <span id="prtSupplier"></span></div>
+            <div>Processed By: <span id="prtStaff"></span></div>
+        </div>
+        
+        <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+        
+        <table style="width: 100%; font-size: 0.9rem; text-align: left; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="padding-bottom: 5px;">Item</th>
+                    <th style="padding-bottom: 5px; text-align: center;">Qty</th>
+                    <th style="padding-bottom: 5px; text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody id="prtTableBody">
+                </tbody>
+        </table>
+        
+        <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+        
+        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1rem;">
+            <span>TOTAL:</span>
+            <span id="prtTotal"></span>
+        </div>
+        
+        <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+        
+        <div style="text-align: center; font-size: 0.85rem; margin-top: 15px;">
+            <div>Internal Warehouse Document</div>
+            <div>Please keep for reconciliation.</div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
@@ -221,13 +287,11 @@
         const formatter = new Intl.NumberFormat('vi-VN');
 
         function openDetailsModal(id) {
-            // Hiện Modal và bật Loading
             document.getElementById('modalLoading').style.display = 'block';
             document.getElementById('modalContent').style.display = 'none';
             document.getElementById('modalTitle').innerText = 'Receipt #IMP-' + String(id).padStart(5, '0');
             myModal.show();
 
-            // Gọi API lấy dữ liệu JSON
             fetch('/imports/show?id=' + id)
                 .then(response => response.json())
                 .then(data => {
@@ -240,14 +304,13 @@
                     const importData = data.import;
                     const details = data.details;
 
-                    // Đổ dữ liệu thông tin chung
+                    // 1. ĐỔ DỮ LIỆU LÊN GIAO DIỆN XEM (MODAL)
                     document.getElementById('mdlSupplier').innerText = importData.supplier_name || 'N/A';
                     document.getElementById('mdlDate').innerText = importData.import_date;
                     document.getElementById('mdlStaff').innerText = importData.staff_name;
                     document.getElementById('mdlNote').innerText = importData.note || '-';
                     document.getElementById('mdlTotal').innerText = formatter.format(importData.total_amount) + ' ₫';
 
-                    // Vẽ bảng chi tiết
                     let html = '';
                     details.forEach(item => {
                         let subtotal = item.quantity * item.import_price;
@@ -267,6 +330,30 @@
                     });
                     document.getElementById('mdlTableBody').innerHTML = html;
 
+                    // 2. ĐỔ DỮ LIỆU LÊN GIAO DIỆN IN ẤN (HIDDEN PRINT AREA)
+                    document.getElementById('prtId').innerText = '#IMP-' + String(id).padStart(5, '0');
+                    document.getElementById('prtDate').innerText = importData.import_date;
+                    document.getElementById('prtSupplier').innerText = importData.supplier_name || 'N/A';
+                    document.getElementById('prtStaff').innerText = importData.staff_name;
+                    document.getElementById('prtTotal').innerText = formatter.format(importData.total_amount) + ' ₫';
+
+                    let prtHtml = '';
+                    details.forEach(item => {
+                        let subtotal = item.quantity * item.import_price;
+                        prtHtml += `
+                            <tr>
+                                <td style="padding: 5px 0;">
+                                    <div style="font-weight: bold;">${item.medicine_name}</div>
+                                    <div style="font-size: 0.85em; color: #555;">Lot: ${item.batch_number} | ${formatter.format(item.import_price)}</div>
+                                </td>
+                                <td style="padding: 5px 0; text-align: center; vertical-align: top;">${item.quantity}</td>
+                                <td style="padding: 5px 0; text-align: right; vertical-align: top;">${formatter.format(subtotal)}</td>
+                            </tr>
+                        `;
+                    });
+                    document.getElementById('prtTableBody').innerHTML = prtHtml;
+
+                    // Hoàn tất tải
                     document.getElementById('modalLoading').style.display = 'none';
                     document.getElementById('modalContent').style.display = 'block';
                 })

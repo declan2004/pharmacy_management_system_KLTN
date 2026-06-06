@@ -129,4 +129,25 @@ class ImportReceipt {
         $stmt->execute([':id' => $id]);
         return $stmt->fetchAll();
     }
+
+    // Hàm tự động sinh mã Lô nhập tiếp theo (Format: LOT-XXX)
+    public function generateNextBatchNumber() {
+        $query = "SELECT batch_number FROM batches ORDER BY batch_id DESC LIMIT 1";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($result && !empty($result['batch_number'])) {
+            $lastBatch = $result['batch_number'];
+            
+            // Cắt chữ "LOT-", lấy phần số và cộng 1
+            $numberPart = (int) str_replace('LOT-', '', $lastBatch);
+            $nextNumber = $numberPart + 1;
+            
+            // Trả về chuỗi format chuẩn 3 số (Ví dụ: LOT-002)
+            return sprintf("LOT-%03d", $nextNumber);
+        } else {
+            return "LOT-001";
+        }
+    }
 }

@@ -45,6 +45,32 @@
         .qty-control { width: 40px; text-align: center; border: 1px solid #ced4da; border-radius: 5px; }
         .checkout-panel { background: white; border-radius: 10px; padding-top: 10px; }
         .total-amount { font-size: 2rem; font-weight: bold; color: #e74c3c; }
+
+        /* ========================================= */
+        /* AI COPILOT CHAT WIDGET STYLES (AI)        */
+        /* ========================================= */
+        #copilot-btn { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4); cursor: pointer; z-index: 1050; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #copilot-btn:hover { transform: scale(1.1); }
+        #copilot-btn i { font-size: 1.8rem; }
+        
+        #copilot-panel { position: fixed; bottom: 110px; right: 30px; width: 380px; height: 550px; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 1040; overflow: hidden; border: 1px solid #e0e0e0; transform-origin: bottom right; animation: scaleUp 0.3s ease-out forwards; }
+        @keyframes scaleUp { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+        
+        .copilot-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .copilot-body { flex: 1; padding: 15px; overflow-y: auto; background-color: #f8f9fa; display: flex; flex-direction: column; gap: 15px; }
+        .copilot-footer { padding: 15px; background: white; border-top: 1px solid #e9ecef; }
+        
+        /* Chat Bubbles (AI) */
+        .chat-bubble { max-width: 85%; padding: 10px 15px; border-radius: 15px; font-size: 0.95rem; line-height: 1.5; position: relative; }
+        .bubble-user { background-color: #e3f2fd; color: #0d47a1; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .bubble-bot { background-color: white; border: 1px solid #e0e0e0; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .bubble-bot ul { padding-left: 20px; margin-bottom: 0; margin-top: 5px; }
+        
+        /* Typing Indicator (AI) */
+        .typing-indicator span { display: inline-block; width: 6px; height: 6px; background-color: #90caf9; border-radius: 50%; margin-right: 3px; animation: typing 1s infinite alternate; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; margin-right: 0; }
+        @keyframes typing { 0% { transform: translateY(0); opacity: 0.5; } 100% { transform: translateY(-5px); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -148,7 +174,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="prescriptionModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+   <div class="modal fade" id="prescriptionModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-danger bg-opacity-10 border-bottom-0">
@@ -182,6 +208,34 @@
                         <i class="bi bi-check-circle me-1"></i>Confirm & Continue
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="copilot-btn" onclick="toggleCopilot()">
+        <i class="bi bi-stars"></i>
+    </div>
+
+    <div id="copilot-panel">
+        <div class="copilot-header">
+            <div>
+                <i class="bi bi-robot me-2"></i>Pharmacist Copilot
+            </div>
+            <button type="button" class="btn-close btn-close-white" style="font-size: 0.8rem;" onclick="toggleCopilot()"></button>
+        </div>
+        
+        <div class="copilot-body" id="chatBox">
+            <div class="chat-bubble bubble-bot">
+                Hello! I'm your AI Clinical Pharmacist. Ask me about drug interactions, dosages, or alternative medicines! 💊
+            </div>
+        </div>
+        
+        <div class="copilot-footer">
+            <div class="input-group">
+                <input type="text" id="copilotInput" class="form-control border-end-0 shadow-none" placeholder="Ask a clinical question..." autocomplete="off">
+                <button class="btn border border-start-0 bg-white text-primary" type="button" onclick="sendToCopilot()">
+                    <i class="bi bi-send-fill"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -297,7 +351,6 @@
             fetchMedicines(); 
             renderCart(); 
             
-            // Chặn chọn ngày tương lai
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('prescriptionDate').setAttribute('max', today);
         });
@@ -475,8 +528,6 @@
             container.scrollTop = container.scrollHeight; 
         }
 
-        // CHECKOUT LOGIC (ETC / GPP COMPLIANCE)
-        
         function processFinalCheckout() {
             Swal.fire({
                 title: 'Confirm Checkout?',
@@ -531,7 +582,6 @@
                 return;
             }
 
-            // KHÓA LOGIC CHẶN NGÀY TƯƠNG LAI
             const selectedDate = new Date(preDate);
             const today = new Date();
             today.setHours(0, 0, 0, 0); 
@@ -555,49 +605,134 @@
 
             processFinalCheckout();
         }
-    </script>
 
-    <script>
-    let barcodeString = "";
-    let lastKeyTime = Date.now();
+        // =========================================
+        // BARCODE SCANNER LOGIC
+        // =========================================
+        let barcodeString = "";
+        let lastKeyTime = Date.now();
 
-    // Listen for keypress events globally
-    window.addEventListener('keypress', function(e) {
-        let currentTime = Date.now();
-        
-        // If time between keystrokes is > 30ms, it's manual typing, reset the string
-        if (currentTime - lastKeyTime > 30) {
-            barcodeString = "";
-        }
-        
-        // If Enter is pressed and string is long enough (Barcode usually > 8 chars)
-        if (e.key === "Enter" && barcodeString.length > 8) {
-            e.preventDefault(); // Prevent form submission
+        window.addEventListener('keypress', function(e) {
+            let currentTime = Date.now();
             
-            scanBarcode(barcodeString); 
-            barcodeString = ""; // Reset for the next scan
-        } else if (e.key !== "Enter") {
-            barcodeString += e.key; 
-        }
-        
-        lastKeyTime = currentTime;
-    });
+            if (currentTime - lastKeyTime > 30) {
+                barcodeString = "";
+            }
+            
+            // Không chặn Enter nếu đang ở trong ô input của Copilot
+            if (e.key === "Enter" && document.activeElement.id !== 'copilotInput') {
+                if (barcodeString.length > 8) {
+                    e.preventDefault(); 
+                    scanBarcode(barcodeString); 
+                }
+                barcodeString = ""; 
+            } else if (e.key !== "Enter") {
+                barcodeString += e.key; 
+            }
+            
+            lastKeyTime = currentTime;
+        });
 
-    function scanBarcode(barcode) {
-        fetch('/pos/apiScanBarcode?barcode=' + barcode)
-            .then(response => response.json())
+        function scanBarcode(barcode) {
+            fetch('/pos/apiScanBarcode?barcode=' + barcode)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        addToCart(data.medicine.medicine_id);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Scan Failed',
+                            text: data.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // =========================================
+        // AI COPILOT LOGIC (AI)
+        // =========================================
+        const chatBox = document.getElementById('chatBox');
+        const copilotInput = document.getElementById('copilotInput');
+
+        // Bật/Tắt khung chat
+        function toggleCopilot() {
+            const panel = document.getElementById('copilot-panel');
+            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'flex' : 'none';
+            if (panel.style.display === 'flex') {
+                copilotInput.focus();
+            }
+        }
+
+        // Bắt sự kiện nhấn Enter để gửi
+        copilotInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendToCopilot();
+            }
+        });
+
+        function sendToCopilot() {
+            const msg = copilotInput.value.trim();
+            if (!msg) return;
+
+            // 1. Hiển thị tin nhắn của User
+            appendBubble('user', msg);
+            copilotInput.value = '';
+
+            // 2. Hiển thị hiệu ứng AI đang gõ chữ
+            const typingId = 'typing-' + Date.now();
+            const typingHtml = `
+                <div class="chat-bubble bubble-bot typing-indicator" id="${typingId}">
+                    <span></span><span></span><span></span>
+                </div>
+            `;
+            chatBox.insertAdjacentHTML('beforeend', typingHtml);
+            scrollToBottom();
+
+            // 3. Bắn API sang AiController
+            const formData = new FormData();
+            formData.append('message', msg);
+
+            fetch('/ai/chat', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
             .then(data => {
-                if(data.success) {
-                    addToCart(data.medicine);
+                // Xóa hiệu ứng đang gõ
+                document.getElementById(typingId).remove();
+                
+                // Hiển thị câu trả lời
+                if (data.success) {
+                    appendBubble('bot', data.reply);
                 } else {
-                    alert(data.message);
+                    appendBubble('bot', `<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> ${data.message}</span>`);
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
-                alert("An unexpected error occurred while scanning.");
+            .catch(err => {
+                document.getElementById(typingId).remove();
+                appendBubble('bot', `<span class="text-danger"><i class="bi bi-wifi-off"></i> Connection error. Please check your internet.</span>`);
             });
-    }
-</script>
+        }
+
+        // Hàm tạo Bong bóng chat
+        function appendBubble(sender, htmlContent) {
+            const bubbleClass = sender === 'user' ? 'bubble-user' : 'bubble-bot';
+            const html = `<div class="chat-bubble ${bubbleClass}">${htmlContent}</div>`;
+            chatBox.insertAdjacentHTML('beforeend', html);
+            scrollToBottom();
+        }
+
+        // Tự động cuộn xuống tin nhắn mới nhất
+        function scrollToBottom() {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    </script>
 </body>
 </html>

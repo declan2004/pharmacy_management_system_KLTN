@@ -3,6 +3,7 @@
  * @var string $fullName 
  * @var string $error 
  * @var array $recent 
+ * @var string $nextCode 
  */
 ?>
 <!DOCTYPE html>
@@ -90,12 +91,19 @@
                         <div class="row g-4">
                             <div class="col-md-3">
                                 <label class="form-label">Medicine Code <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="medicine_code" required placeholder="e.g. MED-001">
+                                <input type="text" class="form-control bg-light fw-bold text-primary" name="medicine_code" value="<?= isset($nextCode) ? htmlspecialchars($nextCode) : '' ?>" readonly>
                             </div>
+                            
                             <div class="col-md-6">
-                                <label class="form-label">Medicine Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="medicine_name" required placeholder="Enter generic or brand name">
+                                <div class="d-flex justify-content-between align-items-end mb-1">
+                                    <label class="form-label mb-0">Medicine Name <span class="text-danger">*</span></label>
+                                    <button type="button" class="btn btn-sm btn-outline-info border-0" onclick="autoFillByAI(this)">
+                                        <i class="bi bi-magic"></i> Auto-fill AI
+                                    </button>
+                                </div>
+                                <input type="text" class="form-control" id="medicine_name" name="medicine_name" required placeholder="Enter generic or brand name">
                             </div>
+
                             <div class="col-md-3">
                                 <label class="form-label">Barcode <span class="text-muted fw-normal" style="font-size: 0.8rem;">(Scan or Type)</span></label>
                                 <input type="text" class="form-control" name="barcode" placeholder="Optional">
@@ -103,15 +111,15 @@
 
                             <div class="col-md-4">
                                 <label class="form-label">Active Ingredient</label>
-                                <input type="text" class="form-control" name="active_ingredient" placeholder="Main compound">
+                                <input type="text" class="form-control" id="active_ingredient" name="active_ingredient" placeholder="Main compound">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Concentration</label>
-                                <input type="text" class="form-control" name="concentration" placeholder="500mg, 10mg/ml...">
+                                <input type="text" class="form-control" id="concentration" name="concentration" placeholder="500mg, 10mg/ml...">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Unit <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="unit" required placeholder="Box, Pill...">
+                                <input type="text" class="form-control" id="unit" name="unit" required placeholder="Box, Pill...">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Base Price (VND) <span class="text-danger">*</span></label>
@@ -119,7 +127,7 @@
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Type <span class="text-danger">*</span></label>
-                                <select class="form-select" name="medicine_type" required>
+                                <select class="form-select" id="medicine_type" name="medicine_type" required>
                                     <option value="OTC">OTC (Non-Prescription)</option>
                                     <option value="ETC">ETC (Prescription)</option>
                                 </select>
@@ -127,7 +135,7 @@
 
                             <div class="col-12">
                                 <label class="form-label">Usage Instructions & Description</label>
-                                <textarea class="form-control" name="description" rows="2" placeholder="Side effects, dosage, contraindications..."></textarea>
+                                <textarea class="form-control" id="description" name="description" rows="2" placeholder="Side effects, dosage, contraindications..."></textarea>
                             </div>
                         </div>
 
@@ -193,41 +201,102 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+
+    // GỌI AI ĐIỀN THÔNG TIN THUỐC
+    function autoFillByAI(btn) {
+        const medName = document.getElementById('medicine_name').value.trim();
+        
+        if(!medName) {
+            alert("Please enter the Medicine Name first!");
+            document.getElementById('medicine_name').focus();
+            return;
+        }
+
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Fetching...';
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('medicine_name', medName);
+
+        fetch('/ai/generateMedicineInfo', { 
+            method: 'POST', 
+            body: formData 
+        })
+        .then(res => res.json())
+        .then(result => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+
+            if(result.success && result.data) {
+                // Điền 3 trường 
+                document.getElementById('active_ingredient').value = result.data.active_ingredient || '';
+                document.getElementById('concentration').value = result.data.concentration || '';
+                document.getElementById('description').value = result.data.description || '';
+                
+                // Điền trường Unit
+                document.getElementById('unit').value = result.data.unit || '';
+                
+                // Điền trường Type (Select box)
+                if(result.data.medicine_type) {
+                    let typeVal = result.data.medicine_type.toUpperCase();
+                    if(typeVal === 'ETC' || typeVal === 'OTC') {
+                        document.getElementById('medicine_type').value = typeVal;
+                    }
+                }
+                
+                // Đổi màu nền chớp lên để báo hiệu điền thành công cho cả 5 ô
+                ['active_ingredient', 'concentration', 'description', 'unit', 'medicine_type'].forEach(id => {
+                    let el = document.getElementById(id);
+                    if(el) {
+                        el.style.backgroundColor = "#eaf4fc";
+                        setTimeout(() => el.style.backgroundColor = "", 800);
+                    }
+                });
+            } else {
+                alert("Could not generate information. " + (result.message || "Please try again."));
+            }
+        })
+        .catch(error => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            console.error("AI Error:", error);
+            alert("System error connecting to AI. Please check your internet or API Key.");
+        });
+    }
+
+    // MÁY QUÉT MÃ VẠCH
     let barcodeString = "";
     let lastKeyTime = Date.now();
 
-    // 1. Bắt sự kiện máy quét trên toàn màn hình
     window.addEventListener('keypress', function(e) {
         let currentTime = Date.now();
         
-        // Nếu gõ chậm hơn 30ms -> Là người gõ phím tay, reset chuỗi
         if (currentTime - lastKeyTime > 30) {
             barcodeString = "";
         }
         
-        // Nếu kết thúc bằng Enter và chuỗi đủ dài 
         if (e.key === "Enter" && barcodeString.length > 6) {
-            e.preventDefault(); // CHẶN LỆNH SUBMIT FORM CỦA MÁY QUÉT
+            // Chỉ chặn Enter nếu focus không nằm trong các textarea/input cần enter (để vẫn gõ văn bản được)
+            if(document.activeElement.tagName !== 'TEXTAREA') {
+                e.preventDefault(); 
+            }
             
-            // Tìm ô input Barcode và tự động điền số vào
             let barcodeInput = document.querySelector('input[name="barcode"]');
             if (barcodeInput) {
                 barcodeInput.value = barcodeString;
-                
                 let originalBg = barcodeInput.style.backgroundColor;
                 barcodeInput.style.backgroundColor = "#e8f0fe";
                 setTimeout(() => barcodeInput.style.backgroundColor = originalBg, 400);
             }
-            
-            barcodeString = ""; // Reset chờ lần quét tiếp theo
+            barcodeString = ""; 
         } else if (e.key !== "Enter") {
-            barcodeString += e.key; // Nối ký tự
+            barcodeString += e.key; 
         }
         
         lastKeyTime = currentTime;
     });
 
-    // 2. Rào chắn bổ sung: Đề phòng Dược sĩ chủ động click chuột vào ô Barcode rồi mới quét
     let barcodeInputNode = document.querySelector('input[name="barcode"]');
     if (barcodeInputNode) {
         barcodeInputNode.addEventListener('keydown', function(e) {
@@ -236,6 +305,6 @@
             }
         });
     }
-</script>
+    </script>
 </body>
 </html>
