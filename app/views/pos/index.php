@@ -49,10 +49,39 @@
         /* ========================================= */
         /* AI COPILOT CHAT WIDGET STYLES (AI)        */
         /* ========================================= */
-        #copilot-btn { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4); cursor: pointer; z-index: 1050; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        #copilot-btn:hover { transform: scale(1.1); }
-        #copilot-btn i { font-size: 1.8rem; }
+        #copilot-btn { 
+            position: fixed; 
+            bottom: 30px; 
+            right: 30px; 
+            width: 55px; 
+            height: 90px; 
+            border-radius: 45px; 
+            background: linear-gradient(180deg, #2ecc71 50%, #ffffff 50%); /* Đổi màu xanh lá - trắng */
+            border: 2px solid #27ae60;
+            box-shadow: 4px 4px 15px rgba(0,0,0,0.2), inset -3px -3px 8px rgba(0,0,0,0.1); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            cursor: pointer; 
+            z-index: 1050; 
+            transform: rotate(30deg); 
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
         
+        #copilot-btn:hover { 
+            transform: rotate(30deg) scale(1.1); 
+            box-shadow: 5px 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        #copilot-btn i { 
+            transform: rotate(-30deg); 
+            font-size: 1.8rem; 
+            color: #2c3e50; 
+            margin-top: -5px;
+            filter: drop-shadow(0px 2px 2px rgba(255,255,255,0.8));
+        }
+
+        /* 2. Khung Chat */
         #copilot-panel { position: fixed; bottom: 110px; right: 30px; width: 380px; height: 550px; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 1040; overflow: hidden; border: 1px solid #e0e0e0; transform-origin: bottom right; animation: scaleUp 0.3s ease-out forwards; }
         @keyframes scaleUp { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
         
@@ -70,7 +99,6 @@
         .typing-indicator span { display: inline-block; width: 6px; height: 6px; background-color: #90caf9; border-radius: 50%; margin-right: 3px; animation: typing 1s infinite alternate; }
         .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
         .typing-indicator span:nth-child(3) { animation-delay: 0.4s; margin-right: 0; }
-        @keyframes typing { 0% { transform: translateY(0); opacity: 0.5; } 100% { transform: translateY(-5px); opacity: 1; } }
     </style>
 </head>
 <body>
