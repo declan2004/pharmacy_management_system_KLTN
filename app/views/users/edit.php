@@ -26,7 +26,7 @@
         .main-content { margin-left: 250px; min-height: 100vh; display: flex; flex-direction: column; }
         .top-navbar { background-color: #3498db; height: 60px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .dashboard-container { padding: 25px; flex-grow: 1; }
-        .form-card { border-radius: 10px; border: none; max-width: 800px; }
+        .form-card { border-radius: 10px; border: none; width: 100%; }       
         .form-label { font-weight: 600; color: #495057; }
         .btn-navy { background-color: var(--navy-blue); color: white; }
         .btn-navy:hover { background-color: #0e1d30; color: white; }
