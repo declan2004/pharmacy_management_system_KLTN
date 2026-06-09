@@ -105,4 +105,28 @@ class Report {
 
         return $data;
     }
+
+    // Bổ sung hàm lấy dữ liệu Excel
+    public function getExportData() {
+        // 1. Thống kê tổng quan tháng này
+        $overview = $this->getSalesAndProfit("MONTH(i.invoice_date) = MONTH(CURRENT_DATE()) AND YEAR(i.invoice_date) = YEAR(CURRENT_DATE())");
+
+        // 2. Top thuốc bán chạy tháng này
+        $topSelling = $this->getTopSellingQuery("MONTH(i.invoice_date) = MONTH(CURRENT_DATE()) AND YEAR(i.invoice_date) = YEAR(CURRENT_DATE())");
+
+        // 3. Danh sách cảnh báo tồn kho thấp
+        $lowStock = $this->db->query("
+            SELECT m.medicine_code, m.medicine_name, SUM(b.quantity) as total_qty 
+            FROM medicines m 
+            LEFT JOIN batches b ON m.medicine_id = b.medicine_id 
+            GROUP BY m.medicine_id, m.medicine_code, m.medicine_name 
+            HAVING total_qty <= 10 OR total_qty IS NULL
+        ")->fetchAll(PDO::FETCH_ASSOC);
+
+        return [
+            'overview' => $overview,
+            'topSelling' => $topSelling,
+            'lowStock' => $lowStock
+        ];
+    }
 }

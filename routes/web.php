@@ -73,6 +73,7 @@ $router->add('GET', '/home/apiStats', 'HomeController', 'apiStats');
 //Luồng Analytics 
 $router->add('GET', '/reports', 'ReportController', 'index');
 $router->add('GET', '/reports/api-analytics', 'ReportController', 'apiAnalytics');
+$router->add('GET', '/reports/exportExcel', 'ReportController', 'exportExcel');
 
 // API dùng chung cho toàn hệ thống: Quét Barcode trả về JSON
 $router->add('GET', '/pos/apiScanBarcode', 'PosController', 'apiScanBarcode');

@@ -117,6 +117,12 @@
         <div class="content-wrapper">
             
             <div class="row g-3 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                <h4 class="fw-bold text-navy-blue m-0"><i class="bi bi-graph-up-arrow me-2"></i>Business Analytics</h4>
+                <a href="/reports/exportExcel" class="btn btn-success shadow-sm fw-bold px-3">
+                    <i class="bi bi-file-earmark-excel-fill me-2"></i>Export to Excel
+                </a>
+            </div>
                 <div class="col-md-3">
                     <div class="widget-card widget-blue">
                         <div>
