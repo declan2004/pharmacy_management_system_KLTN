@@ -313,15 +313,38 @@
                     confirmButtonColor: '#27ae60',
                     cancelButtonColor: '#95a5a6',
                     confirmButtonText: '<i class="bi bi-printer"></i> Confirm & Print',
-                    cancelButtonText: 'Close',
+                    cancelButtonText: 'Cancel & Close', // Đổi tên nút thành Cancel
                     allowOutsideClick: false
                 }).then((result) => {
                     if (result.isConfirmed) {
+                        // Khách thanh toán thành công
                         Swal.fire({
                             icon: 'success', title: 'Printing...', text: 'Payment confirmed. Invoice #' + invoiceId + ' sent to printer!',
                             timer: 2500, showConfirmButton: false
                         });
                         window.open(`/invoices/print?id=${invoiceId}`, '_blank');
+                    } else if (result.dismiss === Swal.DismissReason.cancel) {
+                        // KHÁCH HỦY ĐƠN -> GỌI API HOÀN KHO
+                        Swal.fire({
+                            title: 'Cancelling...',
+                            text: 'Restoring inventory...',
+                            allowOutsideClick: false,
+                            didOpen: () => { Swal.showLoading() }
+                        });
+
+                        fetch('/pos/cancel-invoice', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ invoice_id: invoiceId })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire('Cancelled', 'Customer cancelled. Inventory has been safely restored.', 'info');
+                            } else {
+                                Swal.fire('Error', 'Failed to restore inventory.', 'error');
+                            }
+                        });
                     }
                 });
 

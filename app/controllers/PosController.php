@@ -118,4 +118,26 @@ class PosController extends Controller {
             ]);
         }
     }
+
+    // API Hủy hóa đơn từ giao diện Modal QR
+    public function cancelInvoiceAPI() {
+        $this->authorize([1, 2]);
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $invoiceId = $input['invoice_id'] ?? null;
+
+        if (!$invoiceId) {
+            echo json_encode(['success' => false, 'message' => 'Missing Invoice ID']);
+            return;
+        }
+
+        $posModel = $this->model('Pos');
+        $result = $posModel->cancelInvoice($invoiceId);
+
+        if ($result) {
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Lỗi hệ thống khi hoàn kho.']);
+        }
+    }
 }

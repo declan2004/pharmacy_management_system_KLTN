@@ -130,4 +130,30 @@ class Pos {
             die("SQL Error: " . $e->getMessage()); 
         }
     }
+
+    // API Hỗ trợ hủy đơn và hoàn kho nếu Khách không thanh toán QR
+    public function cancelInvoice($invoiceId) {
+        try {
+            $this->db->beginTransaction();
+
+            // 1. Hoàn lại số lượng vào kho (bảng batches)
+            $queryRestore = "UPDATE batches b 
+                             JOIN invoice_details id ON b.batch_id = id.batch_id 
+                             SET b.quantity = b.quantity + id.quantity 
+                             WHERE id.invoice_id = :inv_id";
+            $stmtRestore = $this->db->prepare($queryRestore);
+            $stmtRestore->execute([':inv_id' => $invoiceId]);
+
+            // 2. Đổi trạng thái hóa đơn thành Cancelled
+            $queryCancel = "UPDATE invoices SET status = 'Cancelled' WHERE invoice_id = :inv_id";
+            $stmtCancel = $this->db->prepare($queryCancel);
+            $stmtCancel->execute([':inv_id' => $invoiceId]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            return false;
+        }
+    }
 }

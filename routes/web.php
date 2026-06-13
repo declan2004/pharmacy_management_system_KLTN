@@ -57,6 +57,7 @@ $router->add('GET', '/returns/show', 'ReturnController', 'show');
 $router->add('GET', '/pos', 'PosController', 'index');
 $router->add('GET', '/pos/search', 'PosController', 'search');
 $router->add('POST', '/pos/checkout', 'PosController', 'checkout');
+$router->add('POST', '/pos/cancel-invoice', 'PosController', 'cancelInvoiceAPI');
 
 // Luồng Selling History
 $router->add('GET', '/invoices', 'InvoiceController', 'index');
