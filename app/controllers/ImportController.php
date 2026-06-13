@@ -33,6 +33,8 @@ class ImportController extends Controller {
                 
                 // Chuyển đổi các mảng song song từ Form thành 1 mảng cấu trúc dễ xử lý
                 if (isset($_POST['medicine_id']) && is_array($_POST['medicine_id'])) {
+                    $today = date('Y-m-d'); // Lấy ngày hiện tại chuẩn hóa
+                    
                     for ($i = 0; $i < count($_POST['medicine_id']); $i++) {
                         $medId = $_POST['medicine_id'][$i];
                         $batchNo = trim($_POST['batch_number'][$i]);
@@ -43,6 +45,13 @@ class ImportController extends Controller {
                         // Bỏ qua các dòng trống (nếu người dùng bấm Add Row mà không điền)
                         if (empty($medId) || empty($batchNo) || $qty <= 0) continue;
 
+                        // BẮT LỖI NGHIỆP VỤ: Chặn hạn sử dụng trong quá khứ hoặc là ngày hôm nay
+                        if (strtotime($expiry) <= strtotime($today)) {
+                            $error = "System Error: Cannot import medicine. The expiry date ($expiry) for batch $batchNo is invalid or already expired.";
+                            $items = []; // Xóa rỗng mảng items để chặn điều kiện lưu DB bên dưới
+                            break;       
+                        }
+
                         $items[] = [
                             'medicine_id'  => $medId,
                             'batch_number' => strtoupper($batchNo), 
@@ -52,7 +61,6 @@ class ImportController extends Controller {
                         ];
                     }
                 }
-
                 if (!empty($items)) {
                     $importData = [
                         'staff_id'      => $_SESSION['user_id'], 

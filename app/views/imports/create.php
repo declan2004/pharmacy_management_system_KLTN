@@ -131,7 +131,7 @@
                                         <td>
                                             <input type="text" class="form-control bg-light fw-bold text-primary" name="batch_number[]" value="<?= isset($nextBatchNo) ? htmlspecialchars($nextBatchNo) : '' ?>" readonly>
                                         </td>
-                                        <td><input type="date" class="form-control" name="expiry_date[]" required></td>
+                                        <td><input type="date" class="form-control" name="expiry_date[]" min="<?= date('Y-m-d', strtotime('+1 day')) ?>" required></td>
                                         <td><input type="number" class="form-control input-qty" name="quantity[]" required min="1" value="1" oninput="calcTotals()"></td>
                                         <td><input type="number" class="form-control input-price" name="import_price[]" required min="0" step="100" placeholder="0" oninput="calcTotals()"></td>
                                         <td class="text-end fw-bold text-primary align-middle subtotal-text">0 ₫</td>
@@ -174,7 +174,7 @@
                 <td>
                     <input type="text" class="form-control bg-light fw-bold text-primary" name="batch_number[]" value="<?= isset($nextBatchNo) ? htmlspecialchars($nextBatchNo) : '' ?>" readonly>
                 </td>
-                <td><input type="date" class="form-control" name="expiry_date[]" required></td>
+                <td><input type="date" class="form-control" name="expiry_date[]" min="<?= date('Y-m-d', strtotime('+1 day')) ?>" required></td>
                 <td><input type="number" class="form-control input-qty" name="quantity[]" required min="1" value="1" oninput="calcTotals()"></td>
                 <td><input type="number" class="form-control input-price" name="import_price[]" required min="0" step="100" placeholder="0" oninput="calcTotals()"></td>
                 <td class="text-end fw-bold text-primary align-middle subtotal-text">0 ₫</td>
