@@ -140,5 +140,31 @@ class Medicine {
     return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function getAvailableMedicinesList() {
+        try {
+            $query = "SELECT m.medicine_name 
+                      FROM medicines m 
+                      JOIN batches b ON m.medicine_id = b.medicine_id 
+                      WHERE b.quantity > 0 AND b.expiry_date >= CURRENT_DATE() 
+                      GROUP BY m.medicine_id, m.medicine_name 
+                      HAVING SUM(b.quantity) > 0";
+                      
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($results)) {
+                return "Inventory is currently empty. No medicines are available.";
+            }
+
+            // Extract medicine names and join them into a comma-separated string
+            $names = array_column($results, 'medicine_name');
+            return implode(', ', $names);
+
+        } catch (PDOException $e) {
+            return "Error retrieving inventory data.";
+        }
+    }
+
 
 }

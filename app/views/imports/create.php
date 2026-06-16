@@ -129,7 +129,7 @@
                                             </select>
                                         </td>
                                         <td>
-                                            <input type="text" class="form-control bg-light fw-bold text-primary" name="batch_number[]" value="<?= isset($nextBatchNo) ? htmlspecialchars($nextBatchNo) : '' ?>" readonly>
+                                           <input type="text" class="form-control fw-bold text-primary" name="batch_number[]" placeholder="Enter Batch No." required>
                                         </td>
                                         <td><input type="date" class="form-control" name="expiry_date[]" min="<?= date('Y-m-d', strtotime('+1 day')) ?>" required></td>
                                         <td><input type="number" class="form-control input-qty" name="quantity[]" required min="1" value="1" oninput="calcTotals()"></td>
@@ -172,7 +172,7 @@
                     </select>
                 </td>
                 <td>
-                    <input type="text" class="form-control bg-light fw-bold text-primary" name="batch_number[]" value="<?= isset($nextBatchNo) ? htmlspecialchars($nextBatchNo) : '' ?>" readonly>
+                    <input type="text" class="form-control fw-bold text-primary" name="batch_number[]" placeholder="Enter Batch No." required>
                 </td>
                 <td><input type="date" class="form-control" name="expiry_date[]" min="<?= date('Y-m-d', strtotime('+1 day')) ?>" required></td>
                 <td><input type="number" class="form-control input-qty" name="quantity[]" required min="1" value="1" oninput="calcTotals()"></td>

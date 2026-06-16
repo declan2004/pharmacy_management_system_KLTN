@@ -150,4 +150,21 @@ class ImportReceipt {
             return "LOT-001";
         }
     }
+
+    // Hàm kiểm tra Hạn sử dụng của một Lô đã tồn tại trong Database
+    public function getBatchExpiryDate($medicineId, $batchNo) {
+        try {
+            // Giả định bảng lưu tồn kho/lô của bạn tên là 'batches'
+            $query = "SELECT expiry_date FROM batches WHERE medicine_id = :medicine_id AND batch_number = :batch_number LIMIT 1";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':medicine_id', $medicineId);
+            $stmt->bindParam(':batch_number', $batchNo);
+            $stmt->execute();
+            
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? $result['expiry_date'] : null; // Trả về HSD nếu lô đã tồn tại, ngược lại trả về null
+        } catch (PDOException $e) {
+            return null;
+        }
+    }
 }

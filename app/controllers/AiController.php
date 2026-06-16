@@ -1,16 +1,18 @@
 <?php
 require_once __DIR__ . '/../../config/config.php';
+
 class AiController extends Controller {
     private $apiKey = GEMINI_API_KEY; 
     private $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-    // Hàm gọi API lõi
+
+    // Core function to call Gemini API
     private function callGemini($prompt) {
         $url = $this->endpoint . "?key=" . $this->apiKey;
         $data = [
             "contents" => [
                 ["parts" => [["text" => $prompt]]]
             ],
-            // Ép AI cấu trúc dữ liệu trả về 100% là JSON
+            // Force AI to structure the return data 100% as JSON
             "generationConfig" => [
                 "response_mime_type" => "application/json"
             ]
@@ -22,7 +24,7 @@ class AiController extends Controller {
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
         
-        // Bỏ qua SSL cho localhost (Laragon)
+        // Bypass SSL for localhost (Laragon/XAMPP)
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); 
 
         $response = curl_exec($ch);
@@ -35,17 +37,17 @@ class AiController extends Controller {
 
         $result = json_decode($response, true);
         
-        // Bắt lỗi từ Google API (Ví dụ: Sai API Key, hết hạn mức)
+        // Catch errors from Google API (e.g., Invalid API Key, Quota Exceeded)
         if (isset($result['error'])) {
             return json_encode(['error' => "Google API Error: " . $result['error']['message']]);
         }
 
-        // Lấy đoạn text AI sinh ra
+        // Extract the generated text
         $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? "";
         return $text;
     }
 
-    // Hàm tự động điền thông tin thuốc 
+    // Function to auto-fill medicine information (Master Data)
     public function generateMedicineInfo() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $medicineName = $_POST['medicine_name'] ?? '';
@@ -66,17 +68,17 @@ class AiController extends Controller {
                            \"description\": \"Write a clear, concise paragraph including: Usage, Dosage, Side effects, and Contraindications.\"
                        }";
 
-            // Bắn Request lên Google
+            // Send request to Google
             $response = $this->callGemini($prompt);
             
-            // 1. Kiểm tra xem có lỗi API trả về không
+            // 1. Check for API errors
             $checkError = json_decode($response, true);
             if (isset($checkError['error'])) {
                 echo json_encode(['success' => false, 'message' => $checkError['error']]);
                 return;
             }
 
-            // 2. Dùng Biểu thức chính quy (Regex) quét tìm đúng cặp ngoặc nhọn của JSON 
+            // 2. Use Regular Expression (Regex) to safely extract the JSON object
             preg_match('/\{.*\}/s', $response, $matches);
             
             if (!empty($matches)) {
@@ -91,13 +93,13 @@ class AiController extends Controller {
 
             echo json_encode([
                 'success' => false, 
-                'message' => 'Failed to parse AI response. Vui lòng bật F12 (Network) để xem chi tiết chuỗi AI trả về.',
+                'message' => 'Failed to parse AI response. Please check F12 (Network tab) for details.',
                 'raw_response' => $response
             ]);
         }
     }
 
-    // Hàm xử lý Chatbot Copilot tại màn hình POS 
+    // Function to handle Copilot Chatbot at the POS screen (Context-Aware)
     public function chatCopilot() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userMessage = $_POST['message'] ?? '';
@@ -107,31 +109,39 @@ class AiController extends Controller {
                 return;
             }
 
-            // Kỹ nghệ Câu lệnh (Prompt Engineering) thiết lập nhân cách cho AI bằng Tiếng Anh
+            // Retrieve real-time inventory context from the Database
+            $medicineModel = $this->model('Medicine');
+            $availableMedicines = $medicineModel->getAvailableMedicinesList();
+
+            // Prompt Engineering: 
             $prompt = "You are a Senior Clinical Pharmacist advising a POS staff member. 
+                       CRITICAL INVENTORY CONSTRAINT: The pharmacy CURRENTLY ONLY HAS the following medicines in stock: [{$availableMedicines}]. 
+                       When recommending medications or alternatives, YOU MUST STRICTLY ONLY RECOMMEND medicines from this available list. Do not invent or suggest medicines that are out of stock. If a condition requires a medicine not on the list, advise the patient to consult a doctor.
+                       
                        User query: '{$userMessage}'
                        
                        STRICT CONSTRAINTS:
-                       1. DIRECT ANSWERS ONLY. No greetings, no polite fillers, no explanations of basic concepts.
-                       2. LENGTH LIMIT: Maximum 3 short bullet points or 2 sentences. Keep it under 50 words.
-                       3. Focus strictly on actionable advice: drug interactions, safe alternatives, or specific dosages.
-                       4. Use <b> tags for critical warnings (pregnancy, children, severe interactions).
-                       5. Return EXACTLY a valid JSON string (no markdown, no ```json):
+                       1. LANGUAGE MATCHING: You MUST detect the language of the 'User query' and respond in that EXACT SAME LANGUAGE.
+                       2. DIRECT ANSWERS ONLY. No greetings, no polite fillers, no explanations of basic concepts.
+                       3. LENGTH LIMIT: Maximum 3 short bullet points or 2 sentences. Keep it under 50 words.
+                       4. Focus strictly on actionable advice: drug interactions, safe alternatives (from the available list), or specific dosages.
+                       5. Use <b> tags for critical warnings (pregnancy, children, severe interactions).
+                       6. Return EXACTLY a valid JSON string (no markdown, no ```json):
                        {
                            \"reply\": \"Use <ul>, <li>, <b> HTML tags. Extremely concise.\"
                        }";
 
-            // Tận dụng lại hàm callGemini
+            // Reuse the callGemini function
             $response = $this->callGemini($prompt);
             
-            // Bắt lỗi từ Google API
+            // Check for API errors
             $checkError = json_decode($response, true);
             if (isset($checkError['error'])) {
                 echo json_encode(['success' => false, 'message' => 'API Error: ' . $checkError['error']]);
                 return;
             }
 
-            // Dùng Regex bóc tách JSON an toàn
+            // Use Regex to safely extract the JSON object
             preg_match('/\{.*\}/s', $response, $matches);
             
             if (!empty($matches)) {
@@ -144,7 +154,7 @@ class AiController extends Controller {
                 }
             }
 
-            echo json_encode(['success' => false, 'message' => 'AI system is busy or returned invalid format. Please try again.']);
+            echo json_encode(['success' => false, 'message' => 'AI system is busy or returned an invalid format. Please try again.']);
         }
     }
 }
