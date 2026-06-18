@@ -3,10 +3,10 @@ require_once '../core/Router.php';
 
 $router = new Router();
 
-// Định nghĩa: Phương thức GET, đường dẫn '/', gọi HomeController và chạy hàm index()
+//Phương thức GET, đường dẫn '/', gọi HomeController và chạy hàm index()
 $router->add('GET', '/', 'HomeController', 'index');
 
-// Thêm 2 route cho Login (1 để hiển thị form, 1 để gửi dữ liệu)
+// 2 route cho Login (1 để hiển thị form, 1 để gửi dữ liệu)
 $router->add('GET', '/login', 'AuthController', 'login');
 $router->add('POST', '/login', 'AuthController', 'login');
 

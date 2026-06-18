@@ -1,5 +1,4 @@
 <?php
-// Gọi file cấu hình vào để lấy thông tin
 require_once '../config/database.php';
 
 class Database {
@@ -35,5 +34,5 @@ class Database {
     }
 }
 
-//File này sẽ sử dụng các thông tin cấu hình ở trên để tạo một kết nối bảo mật (PDO) đến Database
+//File này sử dụng các thông tin cấu hình ở trên để tạo một kết nối bảo mật (PDO) đến Database
 //Sử dụng chuẩn Singleton Pattern để hệ thống không bị tạo quá nhiều kết nối thừa gây chậm web.

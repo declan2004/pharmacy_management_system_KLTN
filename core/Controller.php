@@ -10,10 +10,8 @@ class Controller {
         die("Error: Model {$model} does not exist.");
     }
 
-    // Hàm gọi View để hiển thị giao diện HTML
     public function view($view, $data = []) {
         if (file_exists('../app/views/' . $view . '.php')) {
-            // Tách mảng data thành các biến độc lập
             extract($data);
             require_once '../app/views/' . $view . '.php';
         } else {
@@ -21,7 +19,7 @@ class Controller {
         }
     }
 
-    // Hàm kiểm tra quyền truy cập (RBAC)
+    // Hàm kiểm tra quyền truy cập
     public function authorize($roles = []) {
         // 1. Kiểm tra đăng nhập
         if (!isset($_SESSION['user_id'])) {
@@ -29,7 +27,7 @@ class Controller {
             exit;
         }
 
-        // 2. Kiểm tra vai trò (Dựa trên role_id trong database)
+        // 2. Kiểm tra vai trò 
         // 1: Manager, 2: Pharmacist, 3: Inventory Staff
         $userRole = $_SESSION['role_id'];
         
