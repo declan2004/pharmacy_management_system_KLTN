@@ -14,29 +14,34 @@ class Dashboard {
             'today_sales' => 0
         ];
 
-        // Tổng số loại thuốc trong danh mục
-        $stats['total_medicines'] = $this->db->query("SELECT COUNT(*) FROM medicines")->fetchColumn();
+        // Tổng số loại thuốc đang kinh doanh (Loại trừ thuốc đã xóa mềm)
+        $stats['total_medicines'] = $this->db->query("SELECT COUNT(*) FROM medicines WHERE deleted_at IS NULL")->fetchColumn();
 
-        // Tổng số loại thuốc đã hết hàng 
-        $stats['out_of_stock'] = $this->db->query("
-            SELECT COUNT(*) FROM (
-                SELECT m.medicine_id, SUM(b.quantity) as total_qty 
-                FROM medicines m 
-                LEFT JOIN batches b ON m.medicine_id = b.medicine_id 
-                GROUP BY m.medicine_id 
-                HAVING total_qty IS NULL OR total_qty <= 0
-            ) as oos
-        ")->fetchColumn();
+        // Tổng số loại thuốc đã hết hàng (Không có lô nào quantity > 0)
+        $queryOutStock = "
+            SELECT COUNT(m.medicine_id) as out_of_stock
+            FROM medicines m
+            WHERE NOT EXISTS (
+                SELECT 1 
+                FROM batches b 
+                WHERE b.medicine_id = m.medicine_id AND b.quantity > 0
+            ) 
+            AND m.deleted_at IS NULL
+        ";
+        $stmtOutStock = $this->db->prepare($queryOutStock);
+        $stmtOutStock->execute();
+        
+        // Tổng số loại thuốc trong danh mục
+        $stats['total_medicines'] = $this->db->query("SELECT COUNT(*) FROM medicines WHERE deleted_at IS NULL")->fetchColumn();
+
+        // Đếm số LÔ THUỐC đã hết hàng (Stock Qty = 0) trong bảng batches
+        $stats['out_of_stock'] = $this->db->query("SELECT COUNT(*) FROM batches WHERE quantity = 0")->fetchColumn();
 
         // Số lô đã hết hạn nhưng vẫn còn tồn 
         $stats['expired'] = $this->db->query("SELECT COUNT(*) FROM batches WHERE expiry_date < CURRENT_DATE() AND quantity > 0")->fetchColumn();
 
-        // Doanh thu ngày hôm nay
-        $stats['today_sales'] = $this->db->query("SELECT COALESCE(SUM(total_amount), 0) FROM invoices WHERE DATE(invoice_date) = CURRENT_DATE() AND status != 'Returned'")->fetchColumn();
-
         return $stats;
     }
-
     // 2. Lấy danh sách tồn kho
     public function getInventoryOverview() {
         $query = "SELECT m.medicine_name, b.batch_number, b.quantity, b.expiry_date, b.status, m.base_price, m.medicine_type 

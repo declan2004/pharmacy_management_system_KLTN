@@ -98,7 +98,23 @@
         /* Typing Indicator (AI) */
         .typing-indicator span { display: inline-block; width: 6px; height: 6px; background-color: #90caf9; border-radius: 50%; margin-right: 3px; animation: typing 1s infinite alternate; }
         .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; margin-right: 0; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; margin-right: 0;}
+        
+        /* --- ADD THIS DISCLAIMER CSS --- */
+        .ai-disclaimer {
+            font-size: 0.70rem;
+            color: #856404;
+            background-color: #fff3cd;
+            text-align: center;
+            padding: 6px 10px;
+            border-top: 1px solid #ffeeba;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            line-height: 1.2;
+        }
     </style>
 </head>
 <body>
@@ -258,6 +274,11 @@
             </div>
         </div>
         
+        <div class="ai-disclaimer">
+            <i class="bi bi-shield-exclamation"></i> 
+            Information is for reference only. Pharmacists must verify clinically before advising.
+        </div>
+
         <div class="copilot-footer">
             <div class="input-group">
                 <input type="text" id="copilotInput" class="form-control border-end-0 shadow-none" placeholder="Ask a clinical question..." autocomplete="off">

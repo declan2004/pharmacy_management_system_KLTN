@@ -136,7 +136,7 @@
                 <div class="col-md-8">
                     <div class="card shadow-sm border-0 mb-4 h-100">
                         <div class="card-body p-0">
-                            <h6 class="fw-bold p-3 mb-0 text-navy-blue border-bottom">Inventory Overview (Earliest Expiry)</h6>
+                            <h6 class="fw-bold p-3 mb-0 text-navy-blue border-bottom">Inventory Overview</h6>
                             <div class="table-responsive">
                                 <table class="table custom-table table-hover mb-0 align-middle">
                                     <thead>

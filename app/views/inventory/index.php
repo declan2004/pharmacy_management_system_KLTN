@@ -44,7 +44,7 @@
 <body>
 
     <div class="sidebar">
-        <div class="sidebar-header"><i class="bi bi-capsule me-2"></i> PharmaCare</div>
+        <div class="sidebar-header"><i class="bi bi-capsule me-2"></i> PMS</div>
         <div class="nav-category">Main</div>
         <a href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
         

@@ -1,12 +1,21 @@
 <?php
 /** * @var string $title | @var string $fullName | @var array $batches | @var string $error */
+
+$uniqueMeds = [];
+if (!empty($batches)) {
+    foreach($batches as $b) {
+        if (!isset($uniqueMeds[$b['medicine_id']])) {
+            $uniqueMeds[$b['medicine_id']] = $b['medicine_name'];
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?></title>
+    <title><?= $title ?? 'Create Return Order' ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
@@ -20,8 +29,9 @@
         .sidebar a:hover, .sidebar a.active { background-color: var(--sidebar-hover); color: #ffffff; border-left: 4px solid #3498db; }
         .sidebar a i { margin-right: 15px; font-size: 1.1rem; }
         
-        /* FIX LAYOUT: Main Content wrapper */
+        /* LAYOUT & NAVBAR */
         .main-content { margin-left: 250px; min-height: 100vh; display: flex; flex-direction: column; }
+        .top-navbar { background-color: #3498db; height: 60px; min-height: 60px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10; }
         .dashboard-container { padding: 30px; flex-grow: 1; }
         .form-card { border-radius: 12px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     </style>
@@ -56,6 +66,28 @@
     </div>
 
     <div class="main-content">
+        <div class="top-navbar">
+            <div class="dropdown">
+                <?php 
+                    $displayRole = 'Unknown';
+                    if (isset($_SESSION['role_id'])) {
+                        if ($_SESSION['role_id'] == 1) $displayRole = 'Manager';
+                        elseif ($_SESSION['role_id'] == 2) $displayRole = 'Pharmacist';
+                        elseif ($_SESSION['role_id'] == 3) $displayRole = 'Inventory Staff';
+                    }
+                ?>
+                <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-person-circle fs-5 me-2"></i>
+                    <strong><?= htmlspecialchars($fullName ?? 'Staff') ?> (<?= $displayRole ?>)</strong>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                    <li><a class="dropdown-item py-2" href="/profile"><i class="bi bi-person me-2 text-muted"></i> Profile</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item py-2 text-danger" href="/logout"><i class="bi bi-box-arrow-right me-2"></i> Sign Out</a></li>
+                </ul>
+            </div>
+        </div>
+
         <div class="dashboard-container">
             <div class="mb-4">
                 <a href="/returns" class="text-decoration-none text-muted fw-bold"><i class="bi bi-arrow-left me-1"></i> Back to Return Orders</a>
@@ -87,8 +119,9 @@
                             <table class="table mb-0 align-middle" id="detailsTable">
                                 <thead class="table-light text-uppercase" style="font-size: 0.85rem;">
                                     <tr>
-                                        <th style="width: 40%;" class="ps-4">Select Batch (Medicine - Lot No) <span class="text-danger">*</span></th>
-                                        <th style="width: 15%;">Current Stock</th>
+                                        <th style="width: 25%;" class="ps-4">Medicine <span class="text-danger">*</span></th>
+                                        <th style="width: 20%;">Batch No. <span class="text-danger">*</span></th>
+                                        <th style="width: 10%;">Stock</th>
                                         <th style="width: 15%;">Return Qty <span class="text-danger">*</span></th>
                                         <th style="width: 25%;">Specific Reason</th>
                                         <th style="width: 5%;" class="text-center"></th>
@@ -96,14 +129,19 @@
                                 </thead>
                                 <tbody>
                                     <tr>
+                                        <!-- CỘT 1: CHỌN THUỐC -->
                                         <td class="ps-4 py-3">
-                                            <select class="form-select batch-select" name="batch_id[]" required onchange="updateMaxQty(this)">
-                                                <option value="" data-max="0" data-med-id="0">-- Select Batch from Inventory --</option>
-                                                <?php foreach($batches as $b): ?>
-                                                    <option value="<?= $b['batch_id'] ?>" data-max="<?= $b['quantity'] ?>" data-med-id="<?= $b['medicine_id'] ?? '' ?>">
-                                                        <?= htmlspecialchars($b['medicine_name']) ?> (LOT: <?= $b['batch_number'] ?>)
-                                                    </option>
+                                            <select class="form-select medicine-select" required onchange="loadBatches(this)">
+                                                <option value="">-- Select Medicine --</option>
+                                                <?php foreach($uniqueMeds as $id => $name): ?>
+                                                    <option value="<?= $id ?>"><?= htmlspecialchars($name) ?></option>
                                                 <?php endforeach; ?>
+                                            </select>
+                                        </td>
+                                        <!-- CỘT 2: CHỌN LÔ (Tự động load theo thuốc) -->
+                                        <td>
+                                            <select class="form-select batch-select" name="batch_id[]" required disabled onchange="updateMaxQty(this)">
+                                                <option value="">-- Select Batch --</option>
                                             </select>
                                         </td>
                                         <td><input type="text" class="form-control bg-light stock-display fw-bold text-center" readonly value="0"></td>
@@ -123,16 +161,21 @@
                 </div>
             </form>
         </div>
-    </div> <table style="display: none;"><tbody id="rowTemplate">
+    </div> 
+    
+    <table style="display: none;"><tbody id="rowTemplate">
         <tr>
             <td class="ps-4 py-3">
-                <select class="form-select batch-select" name="batch_id[]" required onchange="updateMaxQty(this)">
-                    <option value="" data-max="0" data-med-id="0">-- Select Batch from Inventory --</option>
-                    <?php foreach($batches as $b): ?>
-                        <option value="<?= $b['batch_id'] ?>" data-max="<?= $b['quantity'] ?>" data-med-id="<?= $b['medicine_id'] ?? '' ?>">
-                            <?= htmlspecialchars($b['medicine_name']) ?> (LOT: <?= $b['batch_number'] ?>)
-                        </option>
+                <select class="form-select medicine-select" required onchange="loadBatches(this)">
+                    <option value="">-- Select Medicine --</option>
+                    <?php foreach($uniqueMeds as $id => $name): ?>
+                        <option value="<?= $id ?>"><?= htmlspecialchars($name) ?></option>
                     <?php endforeach; ?>
+                </select>
+            </td>
+            <td>
+                <select class="form-select batch-select" name="batch_id[]" required disabled onchange="updateMaxQty(this)">
+                    <option value="">-- Select Batch --</option>
                 </select>
             </td>
             <td><input type="text" class="form-control bg-light stock-display fw-bold text-center" readonly value="0"></td>
@@ -144,6 +187,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Data động từ Server truyền sang JS
+        const allBatchesData = <?= json_encode($batches ?? []) ?>;
+
         function addRow() {
             const tbody = document.querySelector('#detailsTable tbody');
             tbody.insertAdjacentHTML('beforeend', document.querySelector('#rowTemplate').innerHTML);
@@ -153,17 +199,56 @@
             const tbody = document.querySelector('#detailsTable tbody');
             if (tbody.children.length > 1) btn.closest('tr').remove();
         }
+
+        // Load danh sách lô tương ứng khi chọn Thuốc
+        function loadBatches(medicineSelect) {
+            const row = medicineSelect.closest('tr');
+            const batchSelect = row.querySelector('.batch-select');
+            const medId = medicineSelect.value;
+            
+            // Reset các ô liên quan
+            row.querySelector('.stock-display').value = '0';
+            const qtyInput = row.querySelector('.qty-input');
+            qtyInput.max = '';
+            qtyInput.value = '1';
+            
+            batchSelect.innerHTML = '<option value="">-- Select Batch --</option>';
+            
+            if(!medId) {
+                batchSelect.disabled = true;
+                return;
+            }
+            
+            batchSelect.disabled = false;
+            
+            // Lọc ra các Lô thuộc về Thuốc đã chọn
+            const filteredBatches = allBatchesData.filter(b => b.medicine_id == medId);
+            
+            filteredBatches.forEach(b => {
+                batchSelect.insertAdjacentHTML('beforeend', `<option value="${b.batch_id}" data-max="${b.quantity}">LOT: ${b.batch_number} (Exp: ${b.expiry_date})</option>`);
+            });
+        }
         
         function updateMaxQty(selectElement) {
             const row = selectElement.closest('tr');
-            const maxQty = selectElement.options[selectElement.selectedIndex].getAttribute('data-max');
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            
+            if(selectElement.value === "") {
+                row.querySelector('.stock-display').value = '0';
+                return;
+            }
+
+            const maxQty = selectedOption.getAttribute('data-max');
             row.querySelector('.stock-display').value = maxQty;
             const qtyInput = row.querySelector('.qty-input');
             qtyInput.max = maxQty; 
-            if(parseInt(qtyInput.value) > parseInt(maxQty)) qtyInput.value = maxQty;
+            
+            if(parseInt(qtyInput.value) > parseInt(maxQty)) {
+                qtyInput.value = maxQty;
+            }
         }
 
-        // BARCODE SCANNER 
+        // BARCODE SCANNER LOGIC 
         let barcodeString = "";
         let lastKeyTime = Date.now();
 
@@ -186,7 +271,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if(data.success) {
-                        autoSelectReturnBatch(data.medicine.medicine_id);
+                        autoSelectReturnMedicine(data.medicine.medicine_id);
                     } else {
                         alert("Error: Scanned barcode not found in catalog!");
                     }
@@ -194,12 +279,12 @@
                 .catch(error => console.error('Error:', error));
         }
 
-        function autoSelectReturnBatch(medId) {
+        function autoSelectReturnMedicine(medId) {
             const tbody = document.querySelector('#detailsTable tbody');
-            let selects = tbody.querySelectorAll('.batch-select');
+            let selects = tbody.querySelectorAll('.medicine-select');
             let targetSelect = null;
 
-            // 1. Tìm dòng trống
+            // Tìm dòng trống
             for(let i = 0; i < selects.length; i++) {
                 if(selects[i].value === "") {
                     targetSelect = selects[i];
@@ -207,20 +292,17 @@
                 }
             }
 
-            // 2. Thêm dòng mới nếu hết chỗ
+            // Thêm dòng mới nếu không có dòng trống
             if(!targetSelect) {
                 addRow();
-                selects = tbody.querySelectorAll('.batch-select');
+                selects = tbody.querySelectorAll('.medicine-select');
                 targetSelect = selects[selects.length - 1];
             }
 
-            // 3. Quét qua các thẻ <option> để tìm Lô thuốc khớp với ID thuốc vừa quét
+            // Quét tìm Medicine ID
             let optionFound = false;
-            let options = targetSelect.options;
-            
-            for(let i = 0; i < options.length; i++) {
-                // Sử dụng data-med-id để khớp dữ liệu
-                if (options[i].getAttribute('data-med-id') == medId) {
+            for(let i = 0; i < targetSelect.options.length; i++) {
+                if (targetSelect.options[i].value == medId) {
                     targetSelect.selectedIndex = i;
                     optionFound = true;
                     break; 
@@ -228,23 +310,24 @@
             }
 
             if (optionFound) {
-                updateMaxQty(targetSelect); // Cập nhật số lượng tồn kho tự động
+                // Gọi hàm load Lô thuốc
+                loadBatches(targetSelect);
                 
                 let row = targetSelect.closest('tr');
                 let originalBg = row.style.backgroundColor;
                 row.style.backgroundColor = "#ffebee"; 
                 setTimeout(() => row.style.backgroundColor = originalBg, 500);
                 
-                // Focus vào ô số lượng trả
-                let qtyInput = row.querySelector('.qty-input');
-                if (qtyInput) qtyInput.focus();
+                // Focus thẳng vào ô chọn Lô (Batch) để người dùng thao tác bước tiếp theo
+                let batchSelect = row.querySelector('.batch-select');
+                if (batchSelect) batchSelect.focus();
             } else {
                 alert("Error: Found the medicine, but there are no matching batches in stock to return!");
-                if (targetSelect.value === "") targetSelect.closest('tr').remove(); // Dọn dẹp dòng trống vừa sinh ra
+                if (targetSelect.value === "") targetSelect.closest('tr').remove();
             }
         }
         
-        // Chặn phím Enter trong bảng
+        // Chặn phím Enter submit form ngoài ý muốn
         document.querySelector('#detailsTable').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') e.preventDefault();
         });
